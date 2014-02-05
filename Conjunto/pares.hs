@@ -9,7 +9,19 @@ type Impar = Int
 
 -- declarations
 miembro :: Conjunto a -> a -> Bool
-miembro u v = u v
+miembro = id
+---------------------------------
+-- Soluciones igual de validas --
+-- miembro u v = u v           --
+-- miembro u = u               --
+-- miembro u = id u            --
+---------------------------------
+
+vacio :: Conjunto a
+vacio = const False -- No devuelve nada, asi es, nada(vacio)
+
+singleton :: (Eq a) => a -> Conjunto a
+singleton = (==)
 
 impar :: Impar -> Bool
 impar 0 = False
