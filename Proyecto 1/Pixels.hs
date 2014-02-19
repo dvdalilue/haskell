@@ -100,6 +100,7 @@ fontBitmap =
     [ 0x00, 0x41, 0x36, 0x08, 0x00 ]  --  }
   ]
 
+-- usar printa (font '<letra>')
 font :: Char -> Pixels
 font c = pixelate fontBitmap (fromEnum c - 32)
 
@@ -110,20 +111,15 @@ pixelate :: [[Integer]] -> Int -> Pixels
 pixelate list c = transpose (map asterisks (map intToBin (list !! c)))
 
 asterisks :: [Integer] -> String
-asterisks b = map onOrOff b -- chrToAstk b []
- -- where chrToAstk [] acc     = acc
-   --     chrToAstk (x:xs) acc = chrToAstk xs (onOrOff x : acc)
+asterisks b = dale b []
+  where dale xs acc
+          | null xs = acc
+          | head xs == 1  = dale (tail xs) ('*' : acc) 
+          | head xs == 0  = dale (tail xs) (' ' : acc)
 
-onOrOff :: Integer -> Char
-onOrOff i
-  | i == 0    = ' '
-  | i == 1    = '*'
-  | otherwise = 'E'
-
--- se puede hacer "map onOrOff (intToBin <Integer>)" y es equivalente a "asterisks (hexToBinary 5)"
 intToBin :: Integer -> [Integer]
 intToBin h = descDiv h 7 []
-  where descDiv _ 0 acc   = reverse acc
+  where descDiv _ 0 acc   = acc
         descDiv 0 cnt acc = descDiv 0 (cnt-1) (0 : acc)
         descDiv i cnt acc = descDiv (div i 2) (cnt-1) (mod i 2 : acc)
 
@@ -139,10 +135,23 @@ pixelListToString = undefined
 concatPixels = undefined
 messageToPixels = undefined
 
-up = undefined
-down = undefined
-left = undefined
-right = undefined
-upsideDown = undefined
-backwards = undefined
-negative = undefined
+up :: Pixels -> Pixels
+up wrd = tail wrd ++ [head wrd]
+   
+down :: Pixels -> Pixels
+down wrd = last wrd : init wrd
+
+left :: Pixels -> Pixels
+left wrd = [ tail x ++ [head x] | x <- wrd ]
+
+right :: Pixels -> Pixels
+right wrd = [ last x : init x | x <- wrd ]
+
+upsideDown :: Pixels -> Pixels
+upsideDown wrd = tail wrd ++ [head wrd]
+
+backwards :: Pixels -> Pixels
+backwards wrd = map reverse wrd
+  
+negative :: Pixels -> Pixels
+negative wrd = [ [ if y=='*' then ' ' else '*' | y<-x ] | x<-wrd ]
