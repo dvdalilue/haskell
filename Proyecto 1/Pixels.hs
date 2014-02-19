@@ -100,31 +100,37 @@ fontBitmap =
     [ 0x00, 0x41, 0x36, 0x08, 0x00 ]  --  }
   ]
 
-font :: String -> Pixels
-font = undefined
+font :: Char -> Pixels
+font c = pixelate fontBitmap (fromEnum c - 32)
 
-asterisks :: [Int] -> String
-asterisks b = chrToAstk b 7 []
-  where chrToAstk _ 0 acc        = acc
-        chrToAstk [] cnt acc     = chrToAstk [] (cnt-1) (onOrOff 0 : acc)
-        chrToAstk (x:xs) cnt acc = chrToAstk xs (cnt-1) (onOrOff x : acc)
+-- printa :: Pixels -> String
+printa x = mapM_ print x
 
-onOrOff :: Int -> Char
+pixelate :: [[Integer]] -> Int -> Pixels
+pixelate list c = transpose (map asterisks (map intToBin (list !! c)))
+
+asterisks :: [Integer] -> String
+asterisks b = map onOrOff b -- chrToAstk b []
+ -- where chrToAstk [] acc     = acc
+   --     chrToAstk (x:xs) acc = chrToAstk xs (onOrOff x : acc)
+
+onOrOff :: Integer -> Char
 onOrOff i
   | i == 0    = ' '
   | i == 1    = '*'
   | otherwise = 'E'
 
-hexToBinary :: Int -> [Int]
-hexToBinary h = descDiv h []
-  where descDiv 0 acc = acc
-        descDiv h acc = descDiv (div h 2) (mod h 2 : acc)
-
-intToBin :: Int -> [Int]
+-- se puede hacer "map onOrOff (intToBin <Integer>)" y es equivalente a "asterisks (hexToBinary 5)"
+intToBin :: Integer -> [Integer]
 intToBin h = descDiv h 7 []
-  where descDiv _ 0 acc   = acc
+  where descDiv _ 0 acc   = reverse acc
         descDiv 0 cnt acc = descDiv 0 (cnt-1) (0 : acc)
         descDiv i cnt acc = descDiv (div i 2) (cnt-1) (mod i 2 : acc)
+
+transpose               :: [[a]] -> [[a]]
+transpose []             = []
+transpose ([]   : xss)   = transpose xss
+transpose ((x:xs) : xss) = (x : [h | (h:_) <- xss]) : transpose (xs : [ t | (_:t) <- xss])
 
 pixelsToString = undefined
 pixelListToPixels = undefined
