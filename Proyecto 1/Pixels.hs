@@ -103,10 +103,11 @@ fontBitmap =
 font :: String -> Pixels
 font = undefined
 
-asterisks :: String -> String
-asterisks b = chrToAstk b []
-  where chrToAstk [] acc     = acc
-        chrToAstk (x:xs) acc = chrToAstk xs ((++) [(onOrOff (fromEnum x))] acc)
+asterisks :: [Int] -> String
+asterisks b = chrToAstk b 7 []
+  where chrToAstk _ 0 acc        = acc
+        chrToAstk [] cnt acc     = chrToAstk [] (cnt-1) (onOrOff 0 : acc)
+        chrToAstk (x:xs) cnt acc = chrToAstk xs (cnt-1) (onOrOff x : acc)
 
 onOrOff :: Int -> Char
 onOrOff i
@@ -114,10 +115,16 @@ onOrOff i
   | i == 1    = '*'
   | otherwise = 'E'
 
-hexToBinary :: Int -> String
+hexToBinary :: Int -> [Int]
 hexToBinary h = descDiv h []
   where descDiv 0 acc = acc
-        descDiv h acc = descDiv (div h 2) ((++) [toEnum (mod h 2)] acc)
+        descDiv h acc = descDiv (div h 2) (mod h 2 : acc)
+
+intToBin :: Int -> [Int]
+intToBin h = descDiv h 7 []
+  where descDiv _ 0 acc   = acc
+        descDiv 0 cnt acc = descDiv 0 (cnt-1) (0 : acc)
+        descDiv i cnt acc = descDiv (div i 2) (cnt-1) (mod i 2 : acc)
 
 pixelsToString = undefined
 pixelListToPixels = undefined
