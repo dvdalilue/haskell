@@ -149,16 +149,20 @@ pixelListToString l = dale (tail l) ((pixelsToString . head) l)
 concatPixels :: [Pixels] -> Pixels
 concatPixels p = dale p ["","","","","","",""]
   where dale xs acc
-          | null xs = acc
-          | otherwise = dale (tail xs) (mergePixels acc (head xs))
+          | null xs   = acc
+          | otherwise = dale (tail xs) (mergePixels acc (head xs) "")
 
-mergePixels :: Pixels -> Pixels -> Pixels
-mergePixels a b = dale a b []
-  where dale x y acc
-          | null y = acc 
-          | otherwise = dale (tail x) (tail y) (acc ++ ([(head x) ++ (head y)]))
-                  
-messageToPixels = undefined
+mergePixels :: Pixels -> Pixels -> String -> Pixels
+mergePixels a b int = dale a b int []
+  where dale x y int acc
+          | null y    = acc 
+          | otherwise = dale (tail x) (tail y) int (acc ++ ([((head x) ++ int) ++ (head y)]))
+
+messageToPixels :: String -> Pixels
+messageToPixels msg = dale msg ["","","","","","",""]
+  where dale s acc
+          | null s    = acc
+          | otherwise = dale (tail s) (mergePixels acc ((font . head) s) " ")
 
 up :: Pixels -> Pixels
 up wrd = tail wrd ++ [head wrd]
