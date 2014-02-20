@@ -108,7 +108,7 @@ font c = pixelate fontBitmap (fromEnum c - 32)
 printa x = mapM_ print x
 
 pixelate :: [[Integer]] -> Int -> Pixels
-pixelate list c = transpose (map asterisks (map intToBin (list !! c)))
+pixelate list c = transpose (map (asterisks . intToBin) (list !! c))
 
 asterisks :: [Integer] -> String
 asterisks b = dale b []
@@ -128,11 +128,36 @@ transpose []             = []
 transpose ([]   : xss)   = transpose xss
 transpose ((x:xs) : xss) = (x : [h | (h:_) <- xss]) : transpose (xs : [ t | (_:t) <- xss])
 
-pixelsToString = undefined
-pixelListToPixels = undefined
-pixelListToString = undefined
+pixelsToString :: Pixels -> String
+pixelsToString p = dale (tail p) (head p)
+  where dale xs acc
+          | null xs   = acc
+          | otherwise = dale (tail xs) ((acc ++ "\n") ++ (head xs))
 
-concatPixels = undefined
+pixelListToPixels :: [Pixels] -> Pixels
+pixelListToPixels l = dale (tail l) (head l)
+  where dale xs acc
+          | null xs   = acc
+          | otherwise = dale (tail xs) ((acc ++ [""]) ++ (head xs))
+
+pixelListToString :: [Pixels] -> String
+pixelListToString l = dale (tail l) ((pixelsToString . head) l)
+  where dale xs acc
+          | null xs   = acc
+          | otherwise = dale (tail xs) ((acc ++ "\n") ++ ((pixelsToString . head) xs))
+
+concatPixels :: [Pixels] -> Pixels
+concatPixels p = dale p ["","","","","","",""]
+  where dale xs acc
+          | null xs = acc
+          | otherwise = dale (tail xs) (mergePixels acc (head xs))
+
+mergePixels :: Pixels -> Pixels -> Pixels
+mergePixels a b = dale a b []
+  where dale x y acc
+          | null y = acc 
+          | otherwise = dale (tail x) (tail y) (acc ++ ([(head x) ++ (head y)]))
+                  
 messageToPixels = undefined
 
 up :: Pixels -> Pixels
