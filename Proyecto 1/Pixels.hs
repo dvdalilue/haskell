@@ -1,4 +1,22 @@
-module Pixels (fontBitmap) where
+{- |
+     Implementacion de una estructura Pixels,
+     que representa los carectares de la tabla ASCII
+-}
+
+module Pixels (
+  -- * El tipo @Pixels@
+  Pixels,
+
+  -- ** Funciones sobre @Pixels@
+  --  font, printa, asterisks, asterisks, intToBin, transpose,
+  --  pixelsToString, pixelListToPixels, pixelListToString, concatPixels, mergePixels, messageToPixels, 
+  --  up, down, left, right, upsideDown, backwards, negative,
+                                                
+  -- * Mapa de bit para los caracteres
+  fontBitmap,
+  ) where
+
+import Data.List
 
 type Pixels = [String]
 
@@ -100,51 +118,49 @@ fontBitmap =
     [ 0x00, 0x41, 0x36, 0x08, 0x00 ]  --  }
   ]
 
--- usar printa (font '<letra>')
+-- | Convierte un caracter dado a se representacion en Pixels
 font :: Char -> Pixels
 font c = pixelate fontBitmap (fromEnum c - 32)
 
--- printa :: Pixels -> String
-printa x = mapM_ print x
+ascii :: Int -> Char
+ascii n = toEnum n
 
+-- | Imprime el Pixels como una pila, para su visualizacion
+printStackPixels :: Pixels -> IO()
+printStackPixels x = mapM_ print x
+
+-- | Convierte a Pixels, el caracter que esta en la posicion pasada como argumento 
 pixelate :: [[Integer]] -> Int -> Pixels
 pixelate list c = transpose (map (asterisks . intToBin) (list !! c))
 
+-- | Cambia la representacion de numeros, a caracteres '*' para prendido y cualquier otro con ' ' para apagado
 asterisks :: [Integer] -> String
 asterisks b = dale b []
   where dale xs acc
-          | null xs = acc
-          | head xs == 1  = dale (tail xs) ('*' : acc) 
-          | head xs == 0  = dale (tail xs) (' ' : acc)
+          | null xs      = acc
+          | head xs == 1 = dale (tail xs) ('*' : acc) 
+          | otherwise    = dale (tail xs) (' ' : acc)
 
+-- | Transforma un entero a su representacion binaria
 intToBin :: Integer -> [Integer]
 intToBin h = descDiv h 7 []
   where descDiv _ 0 acc   = acc
         descDiv 0 cnt acc = descDiv 0 (cnt-1) (0 : acc)
         descDiv i cnt acc = descDiv (div i 2) (cnt-1) (mod i 2 : acc)
 
-transpose               :: [[a]] -> [[a]]
-transpose []             = []
-transpose ([]   : xss)   = transpose xss
-transpose ((x:xs) : xss) = (x : [h | (h:_) <- xss]) : transpose (xs : [ t | (_:t) <- xss])
-
+-- | Convierte el valor de un tipo Pixels a un String
 pixelsToString :: Pixels -> String
-pixelsToString p = dale (tail p) (head p)
-  where dale xs acc
-          | null xs   = acc
-          | otherwise = dale (tail xs) ((acc ++ "\n") ++ (head xs))
+pixelsToString [] = []
+pixelsToString p  = init $ unlines p
 
+-- | Convierte una lista de Pixels a una sola representacion de Pixels
 pixelListToPixels :: [Pixels] -> Pixels
-pixelListToPixels l = dale (tail l) (head l)
-  where dale xs acc
-          | null xs   = acc
-          | otherwise = dale (tail xs) ((acc ++ [""]) ++ (head xs))
+pixelListToPixels [] = []
+pixelListToPixels ps = concat $ intersperse [""] ps
 
 pixelListToString :: [Pixels] -> String
-pixelListToString l = dale (tail l) ((pixelsToString . head) l)
-  where dale xs acc
-          | null xs   = acc
-          | otherwise = dale (tail xs) ((acc ++ "\n") ++ ((pixelsToString . head) xs))
+pixelListToString [] = []
+pixelListToString ps = concat $ intersperse [toEnum 13] (map pixelsToString ps)
 
 concatPixels :: [Pixels] -> Pixels
 concatPixels p = dale p ["","","","","","",""]
