@@ -1,8 +1,0 @@
-Forever [ Say "Hello world!",
-					Repeat 4 [ Delay 500, Color Yellow, Up,
-										 Delay 500,	Color Blue, Right,
-										 Delay 500,	Color Red, Down,
-										 Delay 500,	Color White, Left,
-										 ],
-					Say "Hola mundo!",
-					Negative ]
