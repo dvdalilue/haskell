@@ -1,31 +1,11 @@
-module Pixels (main)
-       where
-
+import Pixels
+import Effects
 import Data.List
-import Data.Map (Map)
-import qualified Data.Map as Map
-import Graphics.HGL
 import System.IO
-
-data Pixels = Pixels { color :: Color, dots :: [[Pixel]] }
-              deriving Show
-              
-data Pixel = Pixel { on :: Bool }
-             deriving Show
-
-data Effects = Say String
-             | Up
-             | Down
-             | Left
-             | Right
-             | Backwards
-             | UpsideDown
-             | Negative
-             | Delay Integer
-             | Color Color
-             | Repeat Integer [Effects]
-             | Forever [Effects]
-
+import System.Exit
+import System.Environment
+import qualified Data.Map as Map
+import qualified Graphics.HGL as HGL
 
 hGetNextLine :: Handle -> IO String
 hGetNextLine handle = do
@@ -71,29 +51,31 @@ fCatch macc h (a:l:ss) = do -- Falta caso donde hay mas filas que las especifica
   eof   <- hIsEOF h
   key   <- hGetKey h
   value <- hGetValue h (read a::Int) (read l::Int)
-  if not eof && spc key value then fCatch (Map.insert key (Pixels White value) macc) h (a:l:ss) else return macc
+  if not eof && spc key value then fCatch (Map.insert key (Pixels HGL.White value) macc) h (a:l:ss) else return macc
     where spc k v
             | k == 'O' && (or $ map or $ map (map on) v) = True
             | k == 'O'  = False
             | otherwise = True
 
-readFont :: Handle -> IO (Map Char Pixels) -- Definicion Intocable 
+readFont :: Handle -> IO (Map.Map Char Pixels)
 readFont h = do
   size <- hGetNextLineTrim h
   fCatch Map.empty h size
 
-font :: Map Char Pixels -> Char -> Pixels -- Definicion Intocable 
+font :: Map.Map Char Pixels -> Char -> Pixels
 font bm c = bm Map.! c
 
-main = do -- runGraphics $ do
-  f <- openFile "fontBeatMap.in" ReadMode
+main :: IO ()
+main = do
+  argv <- getArgs
+  f <- openFile (head argv) ReadMode
   e <- readFont f
   hClose f
   let l = Map.keys e
-  runGraphics $ do
-    w <- openWindow "Led Display" (300, 300)
-    drawInWindow w (text (100, 100) [(head l)])
-    drawInWindow w (text (100, 150) [(last l)])
-    getKey w
-    closeWindow w
+  HGL.runGraphics $ do
+    w <- HGL.openWindow "Led Display" (300, 300)
+    HGL.drawInWindow w (HGL.text (100, 100) [(head l)])
+    HGL.drawInWindow w (HGL.text (100, 150) [(last l)])
+    HGL.getKey w
+    HGL.closeWindow w
 
