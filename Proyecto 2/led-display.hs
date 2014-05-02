@@ -62,9 +62,6 @@ readFont h = do
   size <- hGetNextLineTrim h
   fCatch Map.empty h size
 
-font :: Map.Map Char Pixels -> Char -> Pixels
-font bm c = bm Map.! c
-
 main :: IO ()
 main = do
   argv <- getArgs
