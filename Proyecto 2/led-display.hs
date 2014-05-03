@@ -111,7 +111,7 @@ test = do
          (Just 50)
     HGL.clearWindow w
     --life w a
-    HGL.setGraphic w $ HGL.overGraphics $ cells $ lezip a
+    HGL.setGraphic w $ HGL.overGraphics $ cells $ lezip $ negative a
     HGL.getWindowTick w
     
     HGL.getKey w
