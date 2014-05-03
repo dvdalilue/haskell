@@ -61,7 +61,7 @@ readFont :: Handle -> IO (Map.Map Char Pixels)
 readFont h = do
   size <- hGetNextLineTrim h
   fCatch Map.empty h size
-
+  
 main :: IO ()
 main = do
   argv <- getArgs
@@ -69,10 +69,12 @@ main = do
   e <- readFont f
   hClose f
   let l = Map.keys e
+  let ancho = length $ head ( dots ( font e (head l)))
+      largo = length $ dots ( font e (head l))
   HGL.runGraphics $ do
-    w <- HGL.openWindow "Led Display" (300, 300)
-    HGL.drawInWindow w (HGL.text (100, 100) [(head l)])
-    HGL.drawInWindow w (HGL.text (100, 150) [(last l)])
+    w <- HGL.openWindow "Led Display" (ancho*60, largo*60)
+    HGL.drawInWindow w (HGL.text (1, 1) [(head l)])
+    HGL.drawInWindow w (HGL.text (1, 12) [(last l)])
     HGL.getKey w
     HGL.closeWindow w
 
