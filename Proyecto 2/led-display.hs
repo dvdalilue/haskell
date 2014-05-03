@@ -79,3 +79,40 @@ main = do
     HGL.getKey w
     HGL.closeWindow w
 
+-------------------------------------------------------------------------------
+
+ppc = 30
+
+lezip xs = concatMap removeNull $tablero 0 $map (map on) $dots xs
+  where removeNull = filter (not . (\c->c == -1) . fst)
+        tablero _ [] = []
+        tablero i (x:xs) = (puntos i 0 x) : (tablero (i+1) xs )
+          where puntos _ _ []     = []
+                puntos x y (p:ps) = let a = if p then (x,y)
+                                            else (-1,-1) in a : puntos x (y+1) ps
+                                                            
+
+
+cells t = map cell t
+  where cell (c,f) = HGL.withColor HGL.White $ HGL.ellipse (f*ppc,c*ppc) ((f+1)*ppc,(c+1)*ppc)
+
+test = do
+  f <- openFile "font.txt" ReadMode
+  e <- readFont f
+  hClose f
+  let a = font e 'A'
+  HGL.runGraphics $ do
+    w <- HGL.openWindowEx
+         "Led Display"
+         Nothing
+         --(ppc * 64, ppc * 64)
+         (ppc * 5, ppc *7 )
+         HGL.DoubleBuffered
+         (Just 50)
+    HGL.clearWindow w
+    --life w a
+    HGL.setGraphic w $ HGL.overGraphics $ cells $ lezip a
+    HGL.getWindowTick w
+    
+    HGL.getKey w
+    HGL.closeWindow w
