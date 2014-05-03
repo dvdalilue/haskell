@@ -81,7 +81,7 @@ main = do
 
 -------------------------------------------------------------------------------
 
-ppc = 30
+ppc = 10
 
 lezip xs = concatMap removeNull $tablero 0 $map (map on) $dots xs
   where removeNull = filter (not . (\c->c == -1) . fst)
@@ -100,13 +100,13 @@ test = do
   f <- openFile "font.txt" ReadMode
   e <- readFont f
   hClose f
-  let a = font e 'A'
+  let a = font e 'X'
   HGL.runGraphics $ do
     w <- HGL.openWindowEx
          "Led Display"
          Nothing
          --(ppc * 64, ppc * 64)
-         (ppc * 5, ppc *7 )
+         (ppc * 5 * 5, ppc * 7 * 5)
          HGL.DoubleBuffered
          (Just 50)
     HGL.clearWindow w
