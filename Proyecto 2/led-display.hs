@@ -61,7 +61,10 @@ readFont :: Handle -> IO (Map.Map Char Pixels)
 readFont h = do
   size <- hGetNextLineTrim h
   fCatch Map.empty h size
-  
+
+font :: Map.Map Char Pixels -> Char -> Pixels
+font bm c = bm Map.! c
+
 main :: IO ()
 main = do
   argv <- getArgs
@@ -69,12 +72,47 @@ main = do
   e <- readFont f
   hClose f
   let l = Map.keys e
-  let ancho = length $ head ( dots ( font e (head l)))
-      largo = length $ dots ( font e (head l))
   HGL.runGraphics $ do
-    w <- HGL.openWindow "Led Display" (ancho*60, largo*60)
-    HGL.drawInWindow w (HGL.text (1, 1) [(head l)])
-    HGL.drawInWindow w (HGL.text (1, 12) [(last l)])
+    w <- HGL.openWindow "Led Display" (300, 300)
+    HGL.drawInWindow w (HGL.text (100, 100) [(head l)])
+    HGL.drawInWindow w (HGL.text (100, 150) [(last l)])
     HGL.getKey w
     HGL.closeWindow w
 
+-------------------------------------------------------------------------------
+
+ppc = 10
+
+lezip xs = concatMap removeNull $tablero 0 $map (map on) $dots xs
+  where removeNull = filter (not . (\c->c == -1) . fst)
+        tablero _ [] = []
+        tablero i (x:xs) = (puntos i 0 x) : (tablero (i+1) xs )
+          where puntos _ _ []     = []
+                puntos x y (p:ps) = let a = if p then (x,y)
+                                            else (-1,-1) in a : puntos x (y+1) ps
+                                                            
+
+
+cells t = map cell t
+  where cell (c,f) = HGL.withColor HGL.White $ HGL.ellipse (f*ppc,c*ppc) ((f+1)*ppc,(c+1)*ppc)
+
+test = do
+  f <- openFile "font.txt" ReadMode
+  e <- readFont f
+  hClose f
+  let a = font e 'X'
+  HGL.runGraphics $ do
+    w <- HGL.openWindowEx
+         "Led Display"
+         Nothing
+         --(ppc * 64, ppc * 64)
+         (ppc * 5 * 5, ppc * 7 * 5)
+         HGL.DoubleBuffered
+         (Just 50)
+    HGL.clearWindow w
+    --life w a
+    HGL.setGraphic w $ HGL.overGraphics $ cells $ lezip $ negative a
+    HGL.getWindowTick w
+    
+    HGL.getKey w
+    HGL.closeWindow w

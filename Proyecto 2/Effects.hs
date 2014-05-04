@@ -1,10 +1,20 @@
 module Effects (
 
-  Effects
+  Effects (
+     Say,
+     Up, Down, Left, Right,
+     UpsideDown, Backwards,
+     Negative,
+     Delay,
+     Color,
+     Repeat,
+     Forever
+     )
 
   ) where
 
-import Graphics.HGL (Color)
+import qualified Graphics.HGL as HGL (Color)
+import Pixels
 
 data Effects = Say String
              | Up
@@ -15,6 +25,7 @@ data Effects = Say String
              | UpsideDown
              | Negative
              | Delay Integer
-             | Color Color
+             | Color HGL.Color
              | Repeat Integer [Effects]
              | Forever [Effects]
+             deriving Show
