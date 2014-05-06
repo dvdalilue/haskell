@@ -15,6 +15,7 @@ module Effects (
 
 import qualified Graphics.HGL as HGL (Color)
 import Pixels
+import Data.Typeable
 
 data Effects = Say String
              | Up
@@ -28,4 +29,4 @@ data Effects = Say String
              | Color HGL.Color
              | Repeat Integer [Effects]
              | Forever [Effects]
-             deriving Show
+             deriving (Show, Read)

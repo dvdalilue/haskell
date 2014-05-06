@@ -65,6 +65,83 @@ readFont h = do
 font :: Map.Map Char Pixels -> Char -> Pixels
 font bm c = bm Map.! c
 
+hGetNextChar :: Handle -> IO Char
+hGetNextChar handle = do
+  b <- hIsEOF handle
+  if b then return '\0' else go handle
+    where go handle = do
+            c <- hGetChar handle
+            if (c == ' ' || c == '\n' || c == '\t') then hGetNextChar handle else return c
+
+hGetNext :: Handle -> IO String
+hGetNext handle = do
+  a <- hGetNextChar handle
+  dale handle [a]
+    where dale h acc = do
+            c <- hGetChar h
+            if (c == ' ' || c == '\n' || c == '\t') then return (reverse acc) else dale h (c:acc)
+          
+removeShit s = dale s []
+  where dale [] acc     = reverse acc
+        dale (s:ss) acc = if (s == '\n' || s == '\t') then dale ss acc else dale ss $ s:acc
+
+hGetName :: Handle -> IO String
+hGetName handle = do
+  s <- hShow handle
+  return $ tail $ dropWhile (/= '=') $ takeWhile (/= ',') s
+
+hShowError :: Handle -> String -> IO b
+hShowError h s = do
+  fileName <- hGetName h
+  error $ fileName ++ ": " ++ s
+
+headE :: [Effects] -> (Effects,[Effects])
+headE [] = error "headE: Lista Vacia"
+headE e  = dale (head e) $ tail e
+  where dale (Forever (e:es)) _ = (e, es)
+        dale e es               = (e, es)
+
+hGetInt = hGetNext
+
+hGetString :: Handle -> IO String
+hGetString handle = do
+  c <- hGetNextChar handle
+  if c == '\"' then dale handle [c] else hShowError handle "Algun Say no tiene String"
+    where dale h acc = do
+            b <- hIsEOF h
+            a <- hGetChar h
+            if b then (hShowError handle "Algun Say no tiene su String cerrado con comillas") else if a == '\"' then return (reverse (a:acc)) else dale h (a:acc)
+
+hGetColor = hGetColor
+
+hGetArray :: Handle -> IO String
+hGetArray handle = do
+  c <- hGetNextChar handle
+  if c == '[' then dale handle [c] 1 else hShowError handle "Algun Repeat o Forever no tiene arreglo"
+    where dale h acc count = do
+            b <- hIsEOF h
+            a <- hGetChar h
+            if b then (hShowError handle "Algun Repeat o Forever no tiene su arreglo cerrado")
+              else if a == '[' then dale h (a:acc) $ count + 1
+                   else if a == ']' && count == 1 then return (reverse (a:acc))
+                        else if a == ']' then dale h (a:acc) $ count - 1 
+                               else dale h (a:acc) count
+ 
+--readDisplayInfo :: Handle -> IO [Effects]
+--readDisplayInfo handle = dale handle []
+--  where dale h acc = do
+--          b <- hIsEOF h
+--          if b then return []
+--            else other h acc
+--                 where other h acc = do
+--                         g <- hGetNext h
+--                         if g == "Forever" then other h $ (g ++ (hGetArray h)):acc
+--                           else if g == "Say" then other h $ (g ++ (hGetString h)):acc
+--                                else if g == "Delay" then other h $ (g ++ (' ':(hGetInt h))):acc
+
+-- Creo que es mejor leer todo el string y analizarlo, ya tengo las funciones para entender cada tipo(Integer, Array, String, Color
+-- Dado que no puedo sacar cosas del IO en cada condicional. Mejor sacarlo una vez, una vez y devolverlo.
+
 main :: IO ()
 main = do
   argv <- getArgs
@@ -81,7 +158,7 @@ main = do
 
 -------------------------------------------------------------------------------
 
-ppc = 10
+ppc = 30
 
 lezip xs = concatMap removeNull $tablero 0 $map (map on) $dots xs
   where removeNull = filter (not . (\c->c == -1) . fst)
@@ -90,8 +167,6 @@ lezip xs = concatMap removeNull $tablero 0 $map (map on) $dots xs
           where puntos _ _ []     = []
                 puntos x y (p:ps) = let a = if p then (x,y)
                                             else (-1,-1) in a : puntos x (y+1) ps
-                                                            
-
 
 cells t = map cell t
   where cell (c,f) = HGL.withColor HGL.White $ HGL.ellipse (f*ppc,c*ppc) ((f+1)*ppc,(c+1)*ppc)
@@ -105,13 +180,11 @@ test = do
     w <- HGL.openWindowEx
          "Led Display"
          Nothing
-         --(ppc * 64, ppc * 64)
-         (ppc * 5 * 5, ppc * 7 * 5)
+         (ppc * 5*5, ppc * 7*5)
          HGL.DoubleBuffered
          (Just 50)
     HGL.clearWindow w
-    --life w a
-    HGL.setGraphic w $ HGL.overGraphics $ cells $ lezip $ negative a
+    HGL.setGraphic w $ HGL.overGraphics $ cells $ lezip $ a
     HGL.getWindowTick w
     
     HGL.getKey w
