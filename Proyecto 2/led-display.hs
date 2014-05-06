@@ -83,7 +83,7 @@ hGetNext handle = do
           
 removeShit s = dale s []
   where dale [] acc     = reverse acc
-        dale (s:ss) acc = if (s == '\n' || s == '\t') then dale ss acc else dale ss $ s:acc
+        dale (s:ss) acc = if (s == '\t') then dale ss acc else dale ss $ s:acc
 
 hGetName :: Handle -> IO String
 hGetName handle = do
@@ -101,8 +101,6 @@ headE e  = dale (head e) $ tail e
   where dale (Forever (e:es)) _ = (e, es)
         dale e es               = (e, es)
 
-hGetInt = hGetNext
-
 hGetString :: Handle -> IO String
 hGetString handle = do
   c <- hGetNextChar handle
@@ -110,9 +108,9 @@ hGetString handle = do
     where dale h acc = do
             b <- hIsEOF h
             a <- hGetChar h
-            if b then (hShowError handle "Algun Say no tiene su String cerrado con comillas") else if a == '\"' then return (reverse (a:acc)) else dale h (a:acc)
-
-hGetColor = hGetColor
+            if b then (hShowError handle "Algun Say no tiene su String cerrado con comillas")
+              else if a == '\"' then return (reverse (a:acc))
+                   else dale h (a:acc)
 
 hGetArray :: Handle -> IO String
 hGetArray handle = do
@@ -126,21 +124,59 @@ hGetArray handle = do
                    else if a == ']' && count == 1 then return (reverse (a:acc))
                         else if a == ']' then dale h (a:acc) $ count - 1 
                                else dale h (a:acc) count
- 
---readDisplayInfo :: Handle -> IO [Effects]
---readDisplayInfo handle = dale handle []
---  where dale h acc = do
---          b <- hIsEOF h
---          if b then return []
---            else other h acc
---                 where other h acc = do
---                         g <- hGetNext h
---                         if g == "Forever" then other h $ (g ++ (hGetArray h)):acc
---                           else if g == "Say" then other h $ (g ++ (hGetString h)):acc
---                                else if g == "Delay" then other h $ (g ++ (' ':(hGetInt h))):acc
 
--- Creo que es mejor leer todo el string y analizarlo, ya tengo las funciones para entender cada tipo(Integer, Array, String, Color
--- Dado que no puedo sacar cosas del IO en cada condicional. Mejor sacarlo una vez, una vez y devolverlo.
+getCharStr :: String -> (Char,String)
+getCharStr s = dale s '\0'
+  where dale s o
+          | null s    = (o,s)
+          | otherwise = ((head s), (tail s)) 
+
+getString :: String -> (String,String)
+getString st = if null st then error "No hay palabra" else dale (getCharStr st) []
+  where dale (c,s) acc
+          | null s                = (c:acc,s)
+          | c == ' ' || c == '\n' = ((reverse acc), s)
+          | otherwise             = dale (getCharStr s) $ c:acc
+
+readDisplayInfo :: Handle -> IO [Effects]
+readDisplayInfo handle = dale handle []
+  where dale h acc = do
+          b <- hIsEOF h
+          if b then return $ sexy $ reverse acc
+            else other h acc
+                 where other h acc = do
+                         g <- hGetNext h
+                         if g == "Forever" then forever h g acc
+                           else if g == "Say" then say h g acc 
+                                else if g == "Delay" || g == "Color" then deco h g acc
+                                     else if g == "Repeat" then repeat h g acc 
+                                          else if g == "Up"
+                                                  || g == "Down"
+                                                  || g == "Left"
+                                                  || g == "Rigth"
+                                                  || g == "Backwards"
+                                                  || g == "UpsideDown"
+                                                  || g == "Negative" then dale h $ g:acc
+                                               else error "Hay un efecto desconocido"
+                           where forever h g acc = do
+                                   a <- hGetArray h
+                                   dale h $ (g ++ " " ++ a):acc
+                                 say h g acc     = do
+                                   c <- hGetString h
+                                   dale h $ (g ++ " " ++ c):acc
+                                 deco h g acc    = do
+                                   d <- hGetNext h
+                                   dale h $ (g ++ " " ++ d):acc
+                                 repeat h g acc  = do
+                                   e <- hGetNext h
+                                   i <- hGetArray h
+                                   dale h $ (g ++ " " ++ e ++ " " ++ i):acc
+
+sexy :: [String] -> [Effects]
+sexy s = dale s []
+  where dale s acc
+          | null s    = reverse acc
+          | otherwise = dale (tail s) $ (read (head s) :: Effects):acc
 
 main :: IO ()
 main = do
