@@ -3,7 +3,7 @@
      que representa los carectares de la tabla ASCII
 -}
 
-module Pixels (
+module P1Original (
     -- * El tipo @Pixels@
   Pixels,
   
@@ -18,6 +18,9 @@ module Pixels (
   
   -- * Operaciones para efectos especiales
   up, down, left, right,upsideDown, backwards, negative,
+  
+  pixelate
+  
   ) where
 
 import Data.List
@@ -128,11 +131,12 @@ fontBitmap =
 -- caracter particular del alfabeto
 font :: Char -> Pixels
 font c = pixelate (fontBitmap !! (fromEnum c - 32)) 7 []
-  where pixelate xs count ans
-          | count == 0 = reverse ans
-          | otherwise = pixelate (map (`div `2) xs) (count - 1)
-                                  ( (map (\c -> if c `mod `2 == 1 then '*' else ' ') xs)
-                                   : ans)
+
+pixelate xs count ans
+  | count == 0 = reverse ans
+  | otherwise = pixelate (map (`div `2) xs) (count - 1)
+                          ( (map (\c -> if c `mod `2 == 1 then '*' else ' ') xs)
+                            : ans)
 
 -- | Imprime el Pixels como una pila, para su visualizacion
 printStackPixels :: Pixels -> IO()

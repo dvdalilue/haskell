@@ -12,7 +12,7 @@ module Pixels (
 
   upsideDown, backwards,
 
-  negative
+  negative, concatPixels
   
   ) where
 
@@ -59,3 +59,9 @@ negative :: Pixels -> Pixels
 negative ps = let pts = dots ps in Pixels (color ps) (neg pts)
   where neg p = map (map (\c->Pixel (not (on c)))) p
 -- negative wrd = [ [ if y=='*' then ' ' else '*' | y<-x ] | x<-wrd ]
+
+concatPixels :: [Pixels] -> Pixels
+concatPixels (p:ps) = Pixels (color p) $foldl mergePixels (dots p) (map dots ps)
+  where mergePixels a b = map (\ps -> (fst ps)++(snd ps)) $ zip a b
+        
+--messageToPixels

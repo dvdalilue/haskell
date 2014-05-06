@@ -81,12 +81,12 @@ main = do
 
 -------------------------------------------------------------------------------
 
-ppc = 10
+ppc = 3
 
-lezip xs = concatMap removeNull $tablero 0 $map (map on) $dots xs
+lezip xs = concatMap removeNull $tablero 1 $map (map on) $dots xs
   where removeNull = filter (not . (\c->c == -1) . fst)
         tablero _ [] = []
-        tablero i (x:xs) = (puntos i 0 x) : (tablero (i+1) xs )
+        tablero i (x:xs) = (puntos i 1 x) : (tablero (i+1) xs )
           where puntos _ _ []     = []
                 puntos x y (p:ps) = let a = if p then (x,y)
                                             else (-1,-1) in a : puntos x (y+1) ps
@@ -100,18 +100,19 @@ test = do
   f <- openFile "font.txt" ReadMode
   e <- readFont f
   hClose f
-  let a = font e 'X'
+  let x = [(font e 'X'),(font e 'A')]
   HGL.runGraphics $ do
     w <- HGL.openWindowEx
          "Led Display"
          Nothing
          --(ppc * 64, ppc * 64)
-         (ppc * 5 * 5, ppc * 7 * 5)
+         (ppc * 5 * 20, ppc * 7 * 2)
          HGL.DoubleBuffered
          (Just 50)
     HGL.clearWindow w
     --life w a
-    HGL.setGraphic w $ HGL.overGraphics $ cells $ lezip $ negative a
+    let p = concatPixels $map (font e) "AXAAXA"
+    HGL.setGraphic w $ HGL.overGraphics $ cells $ lezip p 
     HGL.getWindowTick w
     
     HGL.getKey w
