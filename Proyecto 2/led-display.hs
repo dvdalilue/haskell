@@ -7,6 +7,8 @@ import System.Environment
 import qualified Data.Map as Map
 import qualified Graphics.HGL as HGL
 
+max_palabra = [0]
+
 hGetNextLine :: Handle -> IO String
 hGetNextLine handle = do
   b <- hIsEOF handle
@@ -80,15 +82,21 @@ hGetNextChar handle = do
   if b then return '\0' else go handle
     where go handle = do
             c <- hGetChar handle
-            if (c == ' ' || c == '\n' || c == '\t') then hGetNextChar handle else return c
+            if c == ' '
+               || c == '\n'
+               || c == '\t' then hGetNextChar handle
+              else return c
 
 hGetNext :: Handle -> IO String
 hGetNext handle = do
   a <- hGetNextChar handle
-  dale handle [a]
+  if a == '\0' then return "Final" else dale handle [a]
     where dale h acc = do
             c <- hGetChar h
-            if (c == ' ' || c == '\n' || c == '\t') then return (reverse acc) else dale h (c:acc)
+            if c == ' '
+               || c == '\n'
+               || c == '\t' then return (reverse acc)
+              else dale h (c:acc)
           
 removeShit s = dale s []
   where dale [] acc     = reverse acc
@@ -166,7 +174,8 @@ readDisplayInfo handle = dale handle []
                                                   || g == "Backwards"
                                                   || g == "UpsideDown"
                                                   || g == "Negative" then dale h $ g:acc
-                                               else error "Hay un efecto desconocido"
+                                               else if g == "Final" then dale h acc
+                                                 else error "Hay un efecto desconocido"
                            where forever h g acc = do
                                    a <- hGetArray h
                                    dale h $ (g ++ " " ++ a):acc
@@ -186,6 +195,17 @@ sexy s = dale s []
   where dale s acc
           | null s    = reverse acc
           | otherwise = dale (tail s) $ (read (head s) :: Effects):acc
+
+pla :: [Effects] -> Int
+pla es = dale es 0
+  where dale efs acc
+          | null efs  = acc
+          | otherwise = manage (head efs) (tail efs) acc
+          where manage (Say s) es acc         = if length s > acc then dale es $ length s
+                                                else dale es acc 
+                manage (Forever oths) es acc  = dale (oths ++ es) acc
+                manage (Repeat _ oths) es acc = dale (oths ++ es) acc
+                manage _ es acc               = dale es acc
 
 main :: IO ()
 main = do
