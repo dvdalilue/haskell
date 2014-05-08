@@ -16,7 +16,12 @@ module Effects (
   ) where
 
 import qualified Graphics.HGL as HGL (Color)
+<<<<<<< HEAD
 import Pixels as Pix
+=======
+import Pixels
+import Data.Typeable
+>>>>>>> master
 
 data Effects = Say String
              | Up
@@ -30,7 +35,7 @@ data Effects = Say String
              | Color HGL.Color
              | Repeat Integer [Effects]
              | Forever [Effects]
-             deriving Show
+             deriving (Show,Read)
 
 evalE :: Effects -> Pixels -> Pixels
 evalE (Say s) p = p

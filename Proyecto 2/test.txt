@@ -1,0 +1,5 @@
+Up
+Up
+Up
+Down
+Repeat 4 [Up,Up,Up,Up]

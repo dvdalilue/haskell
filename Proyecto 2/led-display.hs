@@ -7,6 +7,8 @@ import System.Environment
 import qualified Data.Map as Map
 import qualified Graphics.HGL as HGL
 
+max_palabra = [0]
+
 hGetNextLine :: Handle -> IO String
 hGetNextLine handle = do
   b <- hIsEOF handle
@@ -23,8 +25,10 @@ hGetNextLineTrim handle = do
 
 hGetKey :: Handle -> IO Char
 hGetKey handle = do
-  c <- hGetNextLineTrim handle
-  return $ head . tail $ head c
+  c <- hGetNextLine handle
+  let d = reverse $ dropWhile (== ' ') c
+  let e = reverse $ dropWhile (== ' ') d
+  return $ (head . tail) e
 
 hGetValue :: Handle -> Int -> Int -> IO [[Pixel]]
 hGetValue handle width height = dale handle width height []
@@ -32,14 +36,19 @@ hGetValue handle width height = dale handle width height []
           | length acc == l = return $ reverse acc
           | otherwise       = dao h a l acc
             where dao h a l acc = do
-                    v <- hGetNextLine h
-                    dale h a l $ (fun (fillS v a) a []):acc
-                    where fun s w acc
-                            | null s    = if length acc == w then reverse acc else error "\nMal Dimension De Columnas"
-                            | otherwise = fun (tail s) w $ (astk (head s)) : acc
-                            where astk k
-                                    | k == '*'  = Pixel True
-                                    | otherwise = Pixel False
+                    b <- hIsEOF h
+                    if b then dale h a l $ take l $ repeat [(Pixel False)]
+                      else go h a l acc
+                      where go h a l acc = do
+                              v <- hGetLine h
+                              dale h a l $ (fun (fillS v a) a []):acc
+                              where fun s w acc
+                                      | null s    = if length acc == w then reverse acc
+                                                    else error "\nMal Dimension De Columnas"
+                                      | otherwise = fun (tail s) w $ (astk (head s)) : acc
+                                      where astk k
+                                              | k == '*'  = Pixel True
+                                              | otherwise = Pixel False
 
 fillS :: String -> Int -> String
 fillS s n = if length s >= n then s else fll s n []
@@ -49,13 +58,15 @@ fillS s n = if length s >= n then s else fll s n []
 
 fCatch macc h (a:l:ss) = do -- Falta caso donde hay mas filas que las especificadas
   eof   <- hIsEOF h
-  key   <- hGetKey h
-  value <- hGetValue h (read a::Int) (read l::Int)
-  if not eof && spc key value then fCatch (Map.insert key (Pixels HGL.White value) macc) h (a:l:ss) else return macc
-    where spc k v
-            | k == 'O' && (or $ map or $ map (map on) v) = True
-            | k == 'O'  = False
-            | otherwise = True
+  if eof then return macc else go macc h (a:l:ss)
+    where go macc h (a:l:ss) = do 
+            key   <- hGetKey h
+            value <- hGetValue h (read a::Int) (read l::Int)
+            if spc key value then fCatch (Map.insert key (Pixels HGL.White value) macc) h (a:l:ss)
+              else fCatch macc h (a:l:ss) 
+              where spc k v
+                      | k /= 'O' = True
+                      | k == 'O' = if (or $ map or $ map (map on) v) then True else False
 
 readFont :: Handle -> IO (Map.Map Char Pixels)
 readFont h = do
@@ -64,6 +75,137 @@ readFont h = do
 
 font :: Map.Map Char Pixels -> Char -> Pixels
 font bm c = bm Map.! c
+
+hGetNextChar :: Handle -> IO Char
+hGetNextChar handle = do
+  b <- hIsEOF handle
+  if b then return '\0' else go handle
+    where go handle = do
+            c <- hGetChar handle
+            if c == ' '
+               || c == '\n'
+               || c == '\t' then hGetNextChar handle
+              else return c
+
+hGetNext :: Handle -> IO String
+hGetNext handle = do
+  a <- hGetNextChar handle
+  if a == '\0' then return "Final" else dale handle [a]
+    where dale h acc = do
+            c <- hGetChar h
+            if c == ' '
+               || c == '\n'
+               || c == '\t' then return (reverse acc)
+              else dale h (c:acc)
+          
+removeShit s = dale s []
+  where dale [] acc     = reverse acc
+        dale (s:ss) acc = if (s == '\t') then dale ss acc else dale ss $ s:acc
+
+hGetName :: Handle -> IO String
+hGetName handle = do
+  s <- hShow handle
+  return $ tail $ dropWhile (/= '=') $ takeWhile (/= ',') s
+
+hShowError :: Handle -> String -> IO b
+hShowError h s = do
+  fileName <- hGetName h
+  error $ fileName ++ ": " ++ s
+
+headE :: [Effects] -> (Effects,[Effects])
+headE [] = error "headE: Lista Vacia"
+headE e  = dale (head e) $ tail e
+  where dale (Forever (e:es)) _ = (e, es)
+        dale e es               = (e, es)
+
+hGetString :: Handle -> IO String
+hGetString handle = do
+  c <- hGetNextChar handle
+  if c == '\"' then dale handle [c] else hShowError handle "Algun Say no tiene String"
+    where dale h acc = do
+            b <- hIsEOF h
+            a <- hGetChar h
+            if b then (hShowError handle "Algun Say no tiene su String cerrado con comillas")
+              else if a == '\"' then return (reverse (a:acc))
+                   else dale h (a:acc)
+
+hGetArray :: Handle -> IO String
+hGetArray handle = do
+  c <- hGetNextChar handle
+  if c == '[' then dale handle [c] 1 else hShowError handle "Algun Repeat o Forever no tiene arreglo"
+    where dale h acc count = do
+            b <- hIsEOF h
+            a <- hGetChar h
+            if b then (hShowError handle "Algun Repeat o Forever no tiene su arreglo cerrado")
+              else if a == '[' then dale h (a:acc) $ count + 1
+                   else if a == ']' && count == 1 then return (reverse (a:acc))
+                        else if a == ']' then dale h (a:acc) $ count - 1 
+                               else dale h (a:acc) count
+
+getCharStr :: String -> (Char,String)
+getCharStr s = dale s '\0'
+  where dale s o
+          | null s    = (o,s)
+          | otherwise = ((head s), (tail s)) 
+
+getString :: String -> (String,String)
+getString st = if null st then error "No hay palabra" else dale (getCharStr st) []
+  where dale (c,s) acc
+          | null s                = (c:acc,s)
+          | c == ' ' || c == '\n' = ((reverse acc), s)
+          | otherwise             = dale (getCharStr s) $ c:acc
+
+readDisplayInfo :: Handle -> IO [Effects]
+readDisplayInfo handle = dale handle []
+  where dale h acc = do
+          b <- hIsEOF h
+          if b then return $ sexy $ reverse acc
+            else other h acc
+                 where other h acc = do
+                         g <- hGetNext h
+                         if g == "Forever" then forever h g acc
+                           else if g == "Say" then say h g acc 
+                                else if g == "Delay" || g == "Color" then deco h g acc
+                                     else if g == "Repeat" then repeat h g acc 
+                                          else if g == "Up"
+                                                  || g == "Down"
+                                                  || g == "Left"
+                                                  || g == "Rigth"
+                                                  || g == "Backwards"
+                                                  || g == "UpsideDown"
+                                                  || g == "Negative" then dale h $ g:acc
+                                               else if g == "Final" then dale h acc
+                                                 else error "Hay un efecto desconocido"
+                           where forever h g acc = do
+                                   a <- hGetArray h
+                                   dale h $ (g ++ " " ++ a):acc
+                                 say h g acc     = do
+                                   c <- hGetString h
+                                   dale h $ (g ++ " " ++ c):acc
+                                 deco h g acc    = do
+                                   d <- hGetNext h
+                                   dale h $ (g ++ " " ++ d):acc
+                                 repeat h g acc  = do
+                                   e <- hGetNext h
+                                   i <- hGetArray h
+                                   dale h $ (g ++ " " ++ e ++ " " ++ i):acc
+
+sexy :: [String] -> [Effects]
+sexy s = dale s []
+  where dale s acc
+          | null s    = reverse acc
+          | otherwise = dale (tail s) $ (read (head s) :: Effects):acc
+
+pla :: [Effects] -> Int
+pla es = dale es 0
+  where dale efs acc
+          | null efs  = acc
+          | otherwise = manage (head efs) (tail efs) acc
+          where manage (Say s) es acc         = if length s > acc then dale es $ length s
+                                                else dale es acc 
+                manage (Forever oths) es acc  = dale (oths ++ es) acc
+                manage (Repeat _ oths) es acc = dale (oths ++ es) acc
+                manage _ es acc               = dale es acc
 
 main :: IO ()
 main = do
@@ -82,7 +224,7 @@ main = do
 -------------------------------------------------------------------------------
 
 --ppc = 3
-ppc = 10
+ppc = 30
 
 lezip xs = concatMap removeNull $tablero 1 $map (map on) $dots xs
   where removeNull = filter (not . (\c->c == -1) . fst)
@@ -109,6 +251,7 @@ test = do
     w <- HGL.openWindowEx
          "Led Display"
          Nothing
+
          --(ppc * 64, ppc * 64)
          (ppc * 5 * 20, ppc * 7 * 2)
          HGL.DoubleBuffered
@@ -122,6 +265,7 @@ test = do
     HGL.setGraphic w $ HGL.overGraphics $ showP $ evalE (Color HGL.White) (font e 'A')
 --    evalL w (Color HGL.Blue) p
 --    check w (cycle [(Color HGL.Blue),Up,Up,(Color HGL.Red),Up,Up]) p
+
     HGL.getWindowTick w
     
     HGL.getKey w
