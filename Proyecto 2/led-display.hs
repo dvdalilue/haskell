@@ -1,5 +1,5 @@
 import Pixels
-import Effects
+import Effects as E
 import Data.List
 import System.IO
 import System.Exit
@@ -81,7 +81,8 @@ main = do
 
 -------------------------------------------------------------------------------
 
-ppc = 3
+--ppc = 3
+ppc = 10
 
 lezip xs = concatMap removeNull $tablero 1 $map (map on) $dots xs
   where removeNull = filter (not . (\c->c == -1) . fst)
@@ -90,11 +91,14 @@ lezip xs = concatMap removeNull $tablero 1 $map (map on) $dots xs
           where puntos _ _ []     = []
                 puntos x y (p:ps) = let a = if p then (x,y)
                                             else (-1,-1) in a : puntos x (y+1) ps
-                                                            
 
-
-cells t = map cell t
-  where cell (c,f) = HGL.withColor HGL.White $ HGL.ellipse (f*ppc,c*ppc) ((f+1)*ppc,(c+1)*ppc)
+cells d t = map cell t 
+  where cell (c,f) = HGL.withColor d $ HGL.ellipse (f*ppc,c*ppc) ((f+1)*ppc,(c+1)*ppc)
+    -- where cell ((c1,f1),(c,f)) = HGL.overGraphic 
+    --                             (HGL.withColor d ( HGL.regionToGraphic (HGL.rectangleRegion (f*ppc,c*ppc) ((f+1)*ppc,(c+1)*ppc))))
+    --                             (HGL.withColor HGL.Blue ( HGL.regionToGraphic ( (HGL.rectangleRegion (((f*ppc)-1),((c*ppc)-1)) ((((f+1)*ppc)+2),(((c+1)*ppc)+2))))))
+        
+showP p = cells (color p) $ lezip $ p
 
 test = do
   f <- openFile "font.txt" ReadMode
@@ -111,9 +115,22 @@ test = do
          (Just 50)
     HGL.clearWindow w
     --life w a
-    let p = concatPixels $map (font e) "AXAAXA"
-    HGL.setGraphic w $ HGL.overGraphics $ cells $ lezip p 
+    let p = concatPixels $map (\(a,b)-> evalE a b)  
+            $zip [Up,Down,E.Right,E.Left,UpsideDown,Negative] $map (font e) "AAAAAAA"
+        
+--    HGL.setGraphic w $ HGL.overGraphics $ cells $ lezip $ evalE (Color HGL.Blue) p 
+    HGL.setGraphic w $ HGL.overGraphics $ showP $ evalE (Color HGL.White) (font e 'A')
+--    evalL w (Color HGL.Blue) p
+--    check w (cycle [(Color HGL.Blue),Up,Up,(Color HGL.Red),Up,Up]) p
     HGL.getWindowTick w
     
     HGL.getKey w
     HGL.closeWindow w
+
+--evalL :: Effects -> Pixels -> IO
+-- check w (e:es) p = do
+--   let d = evalE e p
+--   evalL w e d 
+--   check w es d
+  
+-- evalL w e p = HGL.setGraphic w $ HGL.overGraphics $ showP p
