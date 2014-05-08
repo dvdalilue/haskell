@@ -23,8 +23,10 @@ hGetNextLineTrim handle = do
 
 hGetKey :: Handle -> IO Char
 hGetKey handle = do
-  c <- hGetNextLineTrim handle
-  return $ head . tail $ head c
+  c <- hGetNextLine handle
+  let d = reverse $ dropWhile (== ' ') c
+  let e = reverse $ dropWhile (== ' ') d
+  return $ (head . tail) e
 
 hGetValue :: Handle -> Int -> Int -> IO [[Pixel]]
 hGetValue handle width height = dale handle width height []
@@ -32,14 +34,19 @@ hGetValue handle width height = dale handle width height []
           | length acc == l = return $ reverse acc
           | otherwise       = dao h a l acc
             where dao h a l acc = do
-                    v <- hGetNextLine h
-                    dale h a l $ (fun (fillS v a) a []):acc
-                    where fun s w acc
-                            | null s    = if length acc == w then reverse acc else error "\nMal Dimension De Columnas"
-                            | otherwise = fun (tail s) w $ (astk (head s)) : acc
-                            where astk k
-                                    | k == '*'  = Pixel True
-                                    | otherwise = Pixel False
+                    b <- hIsEOF h
+                    if b then dale h a l $ take l $ repeat [(Pixel False)]
+                      else go h a l acc
+                      where go h a l acc = do
+                              v <- hGetLine h
+                              dale h a l $ (fun (fillS v a) a []):acc
+                              where fun s w acc
+                                      | null s    = if length acc == w then reverse acc
+                                                    else error "\nMal Dimension De Columnas"
+                                      | otherwise = fun (tail s) w $ (astk (head s)) : acc
+                                      where astk k
+                                              | k == '*'  = Pixel True
+                                              | otherwise = Pixel False
 
 fillS :: String -> Int -> String
 fillS s n = if length s >= n then s else fll s n []
@@ -49,13 +56,15 @@ fillS s n = if length s >= n then s else fll s n []
 
 fCatch macc h (a:l:ss) = do -- Falta caso donde hay mas filas que las especificadas
   eof   <- hIsEOF h
-  key   <- hGetKey h
-  value <- hGetValue h (read a::Int) (read l::Int)
-  if not eof && spc key value then fCatch (Map.insert key (Pixels HGL.White value) macc) h (a:l:ss) else return macc
-    where spc k v
-            | k == 'O' && (or $ map or $ map (map on) v) = True
-            | k == 'O'  = False
-            | otherwise = True
+  if eof then return macc else go macc h (a:l:ss)
+    where go macc h (a:l:ss) = do 
+            key   <- hGetKey h
+            value <- hGetValue h (read a::Int) (read l::Int)
+            if spc key value then fCatch (Map.insert key (Pixels HGL.White value) macc) h (a:l:ss)
+              else fCatch macc h (a:l:ss) 
+              where spc k v
+                      | k /= 'O' = True
+                      | k == 'O' = if (or $ map or $ map (map on) v) then True else False
 
 readFont :: Handle -> IO (Map.Map Char Pixels)
 readFont h = do
