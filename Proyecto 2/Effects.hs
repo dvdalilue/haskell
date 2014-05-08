@@ -16,12 +16,8 @@ module Effects (
   ) where
 
 import qualified Graphics.HGL as HGL (Color)
-<<<<<<< HEAD
 import Pixels as Pix
-=======
-import Pixels
 import Data.Typeable
->>>>>>> master
 
 data Effects = Say String
              | Up

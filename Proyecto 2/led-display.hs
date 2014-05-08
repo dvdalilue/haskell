@@ -223,8 +223,8 @@ main = do
 
 -------------------------------------------------------------------------------
 
---ppc = 3
-ppc = 30
+ppc = 4
+--ppc = 10
 
 lezip xs = concatMap removeNull $tablero 1 $map (map on) $dots xs
   where removeNull = filter (not . (\c->c == -1) . fst)
@@ -235,34 +235,44 @@ lezip xs = concatMap removeNull $tablero 1 $map (map on) $dots xs
                                             else (-1,-1) in a : puntos x (y+1) ps
 
 cells d t = map cell t 
-  where cell (c,f) = HGL.withColor d $ HGL.ellipse (f*ppc,c*ppc) ((f+1)*ppc,(c+1)*ppc)
-    -- where cell ((c1,f1),(c,f)) = HGL.overGraphic 
-    --                             (HGL.withColor d ( HGL.regionToGraphic (HGL.rectangleRegion (f*ppc,c*ppc) ((f+1)*ppc,(c+1)*ppc))))
-    --                             (HGL.withColor HGL.Blue ( HGL.regionToGraphic ( (HGL.rectangleRegion (((f*ppc)-1),((c*ppc)-1)) ((((f+1)*ppc)+2),(((c+1)*ppc)+2))))))
+  where cell (c,f) = 
+          -- HGL.overGraphic
+          -- (HGL.withColor d ( HGL.regionToGraphic ( HGL.rectangleRegion (f*ppc,c*ppc) ((f+1)*ppc,(c+1)*ppc))))
+          -- (HGL.withColor HGL.Black ( HGL.regionToGraphic ( HGL.rectangleRegion ((f*ppc)-1,(c*ppc)-1) (((f+1)*ppc)+1,((c+1)*ppc)+1))))
+          -- (HGL.withColor d ( HGL.regionToGraphic ( HGL.rectangleRegion ((f*ppc)+1,(c*ppc)+1) ((((f+1)*ppc)-1),(((c+1)*ppc)-1)))))
+          -- (HGL.withColor HGL.Black ( HGL.regionToGraphic ( HGL.rectangleRegion (f*ppc,c*ppc) ((f+1)*ppc,(c+1)*ppc))))
+
+          
+          -- Solucion Revolucionaria Socialista 
+          let rppc = ppc + 1 in
+          HGL.overGraphic
+          (HGL.withColor d ( HGL.regionToGraphic ( HGL.rectangleRegion ((f*rppc)+1,(c*rppc)+1) ((((f+1)*rppc)-1),(((c+1)*rppc)-1)))))
+          (HGL.withColor HGL.Black ( HGL.regionToGraphic ( HGL.rectangleRegion (f*rppc,c*rppc) ((f+1)*rppc,(c+1)*rppc))))
+        
+          
+                     --HGL.ellipse (f*ppc,c*ppc) ((f+1)*ppc,(c+1)*ppc)
         
 showP p = cells (color p) $ lezip $ p
 
 test = do
-  f <- openFile "font.txt" ReadMode
+  f <- openFile "font2.txt" ReadMode
   e <- readFont f
   hClose f
-  let x = [(font e 'X'),(font e 'A')]
   HGL.runGraphics $ do
     w <- HGL.openWindowEx
          "Led Display"
          Nothing
 
          --(ppc * 64, ppc * 64)
-         (ppc * 5 * 20, ppc * 7 * 2)
+         --(ppc * 5 * 26, ppc * 7 * 2)
+         ((ppc+1) * 5 * 26, (ppc) * 7 * 2)
          HGL.DoubleBuffered
          (Just 50)
     HGL.clearWindow w
     --life w a
-    let p = concatPixels $map (\(a,b)-> evalE a b)  
-            $zip [Up,Down,E.Right,E.Left,UpsideDown,Negative] $map (font e) "AAAAAAA"
-        
+    let p = concatPixels $map (font e) "Never Gonna Give You Up!!!"
 --    HGL.setGraphic w $ HGL.overGraphics $ cells $ lezip $ evalE (Color HGL.Blue) p 
-    HGL.setGraphic w $ HGL.overGraphics $ showP $ evalE (Color HGL.White) (font e 'A')
+    HGL.setGraphic w $ HGL.overGraphics $ showP $ evalE (Color HGL.White) p
 --    evalL w (Color HGL.Blue) p
 --    check w (cycle [(Color HGL.Blue),Up,Up,(Color HGL.Red),Up,Up]) p
 
