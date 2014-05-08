@@ -201,16 +201,14 @@ pla es = dale es 0
           | otherwise = manage (head efs) (tail efs) acc
           where manage (Say s) es acc         = if length s > acc then dale es $ length s
                                                 else dale es acc 
-                manage (Forever oths) es acc  = dale (oths ++ es) acc
+                manage (Forever oths) es acc  = dale oths acc
                 manage (Repeat _ oths) es acc = dale (oths ++ es) acc
                 manage _ es acc               = dale es acc
 
 ppc = 5
 
---v_ancho = 
---v_largo = 
-
-lezip xs = concatMap removeNull $tablero 0 $map (map on) $dots xs
+lezip :: (Eq a, Num a, Num b) => Pixels -> [(a,b)]
+lezip xs = concatMap removeNull $tablero 0 $ map (map on) $dots xs
   where removeNull = filter (not . (\c->c == -1) . fst)
         tablero _ [] = []
         tablero i (x:xs) = (puntos i 0 x) : (tablero (i+1) xs )
@@ -218,47 +216,34 @@ lezip xs = concatMap removeNull $tablero 0 $map (map on) $dots xs
                 puntos x y (p:ps) = let a = if p then (x,y)
                                             else (-1,-1) in a : puntos x (y+1) ps
 
+cells :: [(Int,Int)] -> [HGL.Graphic]
 cells t = map cell t
   where cell (c,f) = HGL.withColor HGL.White $ HGL.ellipse (f*ppc,c*ppc) ((f+1)*ppc,(c+1)*ppc)
 
 main :: IO ()
 main = do
   argv <- getArgs
-  f <- openFile (head argv) ReadMode          -- Archivo de Fonts
-  e <- readFont f                             -- Map Char Pixels
-  t <- openFile ((head . tail) argv) ReadMode -- Archivo de Effects
-  g <- readDisplayInfo t                      -- Estructura de [Effects]
-  let max_word = pla g                        -- Tamaño maximo de palabra
-  f <- openFile (head argv) ReadMode          -- Archivo de Fonts(AGAIN)
-  hw <- hGetNextLineTrim f                    -- Arreglo de dimesiones para los pixels
-  let p_col = read (head hw) :: Int
+  f    <- openFile (head argv) ReadMode          -- Archivo de Fonts
+  e    <- readFont f                             -- Map Char Pixels
+  t    <- openFile ((head . tail) argv) ReadMode -- Archivo de Effects
+  g    <- readDisplayInfo t                      -- Estructura de [Effects]
+  f    <- openFile (head argv) ReadMode          -- Archivo de Fonts(AGAIN)
+  hw   <- hGetNextLineTrim f                     -- Arreglo de dimesiones para los pixels
+  let max_word = pla g                           -- Tamaño maximo de palabra
+      p_col = read (head hw) :: Int
       p_fil = read (last hw) :: Int
+      a = font e 'A'
   hClose f
   hClose t
-  HGL.runGraphics $ do
-    w <- HGL.openWindow "Led Display" (ppc*p_col*max_word, ppc*p_fil)
-    HGL.drawInWindow w (HGL.text (2, 2) [(head (head hw))])
-    HGL.drawInWindow w (HGL.text (9, 2) [(head (last hw))])
-    HGL.getKey w
-    HGL.closeWindow w
-
--------------------------------------------------------------------------------
-
-test = do
-  f <- openFile "font.txt" ReadMode
-  e <- readFont f
-  hClose f
-  let a = font e 'X'
   HGL.runGraphics $ do
     w <- HGL.openWindowEx
          "Led Display"
          Nothing
-         (ppc * 5*5, ppc * 7*5)
+         (ppc * p_col * max_word, ppc * p_fil)
          HGL.DoubleBuffered
          (Just 50)
     HGL.clearWindow w
-    HGL.setGraphic w $ HGL.overGraphics $ cells $ lezip $ a
+    HGL.setGraphic w $ HGL.overGraphics $ cells $ lezip a
     HGL.getWindowTick w
-    
     HGL.getKey w
     HGL.closeWindow w
