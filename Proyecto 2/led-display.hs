@@ -7,8 +7,6 @@ import System.Environment
 import qualified Data.Map as Map
 import qualified Graphics.HGL as HGL
 
-max_palabra = [0]
-
 hGetNextLine :: Handle -> IO String
 hGetNextLine handle = do
   b <- hIsEOF handle
@@ -207,23 +205,10 @@ pla es = dale es 0
                 manage (Repeat _ oths) es acc = dale (oths ++ es) acc
                 manage _ es acc               = dale es acc
 
-main :: IO ()
-main = do
-  argv <- getArgs
-  f <- openFile (head argv) ReadMode
-  e <- readFont f
-  hClose f
-  let l = Map.keys e
-  HGL.runGraphics $ do
-    w <- HGL.openWindow "Led Display" (300, 300)
-    HGL.drawInWindow w (HGL.text (100, 100) [(head l)])
-    HGL.drawInWindow w (HGL.text (100, 150) [(last l)])
-    HGL.getKey w
-    HGL.closeWindow w
+ppc = 5
 
--------------------------------------------------------------------------------
-
-ppc = 30
+--v_ancho = 
+--v_largo = 
 
 lezip xs = concatMap removeNull $tablero 0 $map (map on) $dots xs
   where removeNull = filter (not . (\c->c == -1) . fst)
@@ -235,6 +220,29 @@ lezip xs = concatMap removeNull $tablero 0 $map (map on) $dots xs
 
 cells t = map cell t
   where cell (c,f) = HGL.withColor HGL.White $ HGL.ellipse (f*ppc,c*ppc) ((f+1)*ppc,(c+1)*ppc)
+
+main :: IO ()
+main = do
+  argv <- getArgs
+  f <- openFile (head argv) ReadMode          -- Archivo de Fonts
+  e <- readFont f                             -- Map Char Pixels
+  t <- openFile ((head . tail) argv) ReadMode -- Archivo de Effects
+  g <- readDisplayInfo t                      -- Estructura de [Effects]
+  let max_word = pla g                        -- Tamaño maximo de palabra
+  f <- openFile (head argv) ReadMode          -- Archivo de Fonts(AGAIN)
+  hw <- hGetNextLineTrim f                    -- Arreglo de dimesiones para los pixels
+  let p_col = read (head hw) :: Int
+      p_fil = read (last hw) :: Int
+  hClose f
+  hClose t
+  HGL.runGraphics $ do
+    w <- HGL.openWindow "Led Display" (ppc*p_col*max_word, ppc*p_fil)
+    HGL.drawInWindow w (HGL.text (2, 2) [(head (head hw))])
+    HGL.drawInWindow w (HGL.text (9, 2) [(head (last hw))])
+    HGL.getKey w
+    HGL.closeWindow w
+
+-------------------------------------------------------------------------------
 
 test = do
   f <- openFile "font.txt" ReadMode
