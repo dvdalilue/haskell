@@ -1,5 +1,5 @@
 import Pixels
-import Effects
+import Effects as E
 import Data.List
 import System.IO
 import System.Exit
@@ -216,9 +216,22 @@ lezip xs = concatMap removeNull $tablero 0 $ map (map on) $dots xs
                 puntos x y (p:ps) = let a = if p then (x,y)
                                             else (-1,-1) in a : puntos x (y+1) ps
 
-cells :: [(Int,Int)] -> [HGL.Graphic]
-cells t = map cell t
-  where cell (c,f) = HGL.withColor HGL.White $ HGL.ellipse (f*ppc,c*ppc) ((f+1)*ppc,(c+1)*ppc)
+cells :: HGL.Color -> [(Int,Int)] -> [HGL.Graphic]
+cells d t = map cell t 
+  where cell (c,f) = 
+          -- HGL.overGraphic
+          -- (HGL.withColor d ( HGL.regionToGraphic ( HGL.rectangleRegion (f*ppc,c*ppc) ((f+1)*ppc,(c+1)*ppc))))
+          -- (HGL.withColor HGL.Black ( HGL.regionToGraphic ( HGL.rectangleRegion ((f*ppc)-1,(c*ppc)-1) (((f+1)*ppc)+1,((c+1)*ppc)+1))))
+          -- (HGL.withColor d ( HGL.regionToGraphic ( HGL.rectangleRegion ((f*ppc)+1,(c*ppc)+1) ((((f+1)*ppc)-1),(((c+1)*ppc)-1)))))
+          -- (HGL.withColor HGL.Black ( HGL.regionToGraphic ( HGL.rectangleRegion (f*ppc,c*ppc) ((f+1)*ppc,(c+1)*ppc))))
+          
+          -- Solucion Revolucionaria Socialista 
+          HGL.overGraphic
+          (HGL.withColor d ( HGL.regionToGraphic ( HGL.rectangleRegion ((f*ppc)+1,(c*ppc)+1) ((((f+1)*ppc)-1),(((c+1)*ppc)-1)))))
+          (HGL.withColor HGL.Black ( HGL.regionToGraphic ( HGL.rectangleRegion (f*ppc,c*ppc) ((f+1)*ppc,(c+1)*ppc))))
+          -- HGL.ellipse (f*ppc,c*ppc) ((f+1)*ppc,(c+1)*ppc)
+        
+showP p = cells (color p) $ lezip $ p
 
 main :: IO ()
 main = do
@@ -233,6 +246,7 @@ main = do
       p_col = read (head hw) :: Int
       p_fil = read (last hw) :: Int
       a = font e 'A'
+      p = concatPixels $ map (font e) "Never Gonna Give You Up!!!"
   hClose f
   hClose t
   HGL.runGraphics $ do
@@ -243,7 +257,8 @@ main = do
          HGL.DoubleBuffered
          (Just 50)
     HGL.clearWindow w
-    HGL.setGraphic w $ HGL.overGraphics $ cells $ lezip a
+    HGL.setGraphic w $ HGL.overGraphics $ cells HGL.Green $ lezip a
+    -- HGL.setGraphic w $ HGL.overGraphics $ showP $ evalE (Color HGL.White) p
     HGL.getWindowTick w
     HGL.getKey w
     HGL.closeWindow w
