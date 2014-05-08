@@ -113,8 +113,9 @@ hShowError h s = do
 headE :: [Effects] -> (Effects,[Effects])
 headE [] = error "headE: Lista Vacia"
 headE e  = dale (head e) $ tail e
-  where dale (Forever (e:es)) _ = (e, es)
-        dale e es               = (e, es)
+  where dale (Forever (e:es)) _   = (e, es)
+        dale (Repeat i (e:es)) ss = (e, es ++ ss)
+        dale e es                 = (e, es)
 
 hGetString :: Handle -> IO String
 hGetString handle = do
@@ -242,7 +243,7 @@ main = do
   g    <- readDisplayInfo t                      -- Estructura de [Effects]
   f    <- openFile (head argv) ReadMode          -- Archivo de Fonts(AGAIN)
   hw   <- hGetNextLineTrim f                     -- Arreglo de dimesiones para los pixels
-  let max_word = pla g                           -- Tamaño maximo de palabra
+  let max_word = length "Never Gonna Give You Up!!!" -- pla g                           -- Tamaño maximo de palabra
       p_col = read (head hw) :: Int
       p_fil = read (last hw) :: Int
       a = font e 'A'
@@ -257,8 +258,18 @@ main = do
          HGL.DoubleBuffered
          (Just 50)
     HGL.clearWindow w
-    HGL.setGraphic w $ HGL.overGraphics $ cells HGL.Green $ lezip a
+    -- HGL.setGraphic w $ HGL.overGraphics $ cells HGL.Green $ lezip a
     -- HGL.setGraphic w $ HGL.overGraphics $ showP $ evalE (Color HGL.White) p
-    HGL.getWindowTick w
-    HGL.getKey w
+    ldisplay w p g
+    -- HGL.getKey w
     HGL.closeWindow w
+
+ldisplay w p fx = do
+  HGL.setGraphic w $ HGL.overGraphics $ showP $ evalE (Color HGL.White) p
+  HGL.getWindowTick w
+  if null fx then HGL.getWindowTick w
+    else go w p fx
+    where go win pal fxs = do
+            let ef = headE fxs
+            -- sleepToNextMinute
+            ldisplay win (evalE (fst ef) pal) $ snd ef

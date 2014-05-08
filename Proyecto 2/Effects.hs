@@ -11,12 +11,14 @@ module Effects (
      Forever
      ),
   
-  evalE
+  evalE, sleepToNextMinute
 
   ) where
 
 import qualified Graphics.HGL as HGL (Color)
 import Pixels as Pix
+import Data.Time.Clock
+import Control.Concurrent (threadDelay)
 
 data Effects = Say String
              | Up
@@ -42,3 +44,10 @@ evalE Backwards p = Pix.backwards p
 evalE UpsideDown p = Pix.upsideDown p
 evalE Negative p = Pix.negative p
 evalE (Color c) p = p { color = c }
+evalE (Delay i) p = p
+
+sleepToNextMinute :: IO ()
+sleepToNextMinute = do
+  t <- getCurrentTime
+  let secs = round (realToFrac $ utctDayTime t) `rem` 60
+  threadDelay $ 100 * (60 - secs) -- 1000000
