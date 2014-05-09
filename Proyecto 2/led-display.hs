@@ -163,13 +163,27 @@ pla es = dale es 0
                 manage (Repeat _ oths) es acc = dale (oths ++ es) acc
                 manage _ es acc               = dale es acc
 
+listEffects :: [String] -> IO [Effects]
+listEffects ss = dale ss []
+  where dale ss acc = do
+          if null ss then return $ reverse $ concat acc
+            else go ss acc
+            where go (s:ss) acc = do
+                    f  <- openFile s ReadMode
+                    ef <- readDisplayInfo f
+                    dale ss $ ef:acc
+
 readFont :: Handle -> IO (Map.Map Char Pixels)
 readFont h = do
   size <- hGetNextLineTrim h
-  fCatch Map.empty h size
+  let a = read (head size) :: Int
+      l = read (last size) :: Int
+      b = Pixels HGL.White $ take a $ repeat $ take l $ repeat $ Pixel True
+  fCatch (Map.singleton '\0' b) h size
 
 font :: Map.Map Char Pixels -> Char -> Pixels
-font bm c = bm Map.! c
+font bm c = if Map.member c bm then bm Map.! c
+            else bm Map.! '\0'
 
 readDisplayInfo :: Handle -> IO [Effects]
 readDisplayInfo handle = dale handle []
