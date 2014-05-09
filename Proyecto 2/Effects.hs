@@ -17,7 +17,7 @@ module Effects (
      Forever
      ),
 
-  evalE,
+  evalE, evalL,
 
   sleepDelay
   
@@ -45,7 +45,8 @@ data Effects = Say String
 
 -- | 'evalE' Aplica el efecto al Pixels
 evalE :: Effects -> Pixels -> Map.Map Char Pixels -> Int -> Pixels
-evalE (Say s) p mc max = concatPixels $ map ((Map.!) mc) $ s ++ (take (max - (length s)) (repeat ' '))
+evalE (Say s) p mc max = concatPixels $ map ((Map.!) mc) $ s 
+                         ++ (take (max - (length s)) (repeat ' '))
 evalE Up p         _ _ = up p
 evalE Down p       _ _ = down p
 evalE Effects.Left p       _ _ = left p
@@ -60,3 +61,10 @@ evalE (Delay i) p  _ _ = p
 sleepDelay :: Int -> IO ()
 sleepDelay ms = do
   threadDelay $ 1000 * ms
+  
+-- | 'evalL' funcion que arma la lista con los efectos a mostrar
+evalL [] = []
+evalL ((Forever xs):es) = cycle $evalL xs
+evalL ((Repeat i xs):es) = (concat (replicate (fromInteger i ::Int) (evalL xs))) ++ (evalL es)
+evalL (e:es) = e : (evalL es)
+
