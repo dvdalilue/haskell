@@ -19,7 +19,6 @@ module Effects (
   ) where
 
 import qualified Graphics.HGL as HGL (Color)
-import Control.Concurrent (threadDelay)
 import Pixels as Pix
 
 -- | Tipo de datos para Effects

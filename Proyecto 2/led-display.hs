@@ -4,6 +4,7 @@ import Data.List
 import System.IO
 import System.Exit
 import System.Environment
+import Control.Concurrent (threadDelay)
 import qualified Data.Map as Map
 import qualified Graphics.HGL as HGL
 
@@ -65,14 +66,6 @@ fCatch macc h (a:l:ss) = do -- Falta caso donde hay mas filas que las especifica
               where spc k v
                       | k /= 'O' = True
                       | k == 'O' = if (or $ map or $ map (map on) v) then True else False
-
-readFont :: Handle -> IO (Map.Map Char Pixels)
-readFont h = do
-  size <- hGetNextLineTrim h
-  fCatch Map.empty h size
-
-font :: Map.Map Char Pixels -> Char -> Pixels
-font bm c = bm Map.! c
 
 hGetNextChar :: Handle -> IO Char
 hGetNextChar handle = do
@@ -154,6 +147,31 @@ getString st = if null st then error "No hay palabra" else dale (getCharStr st) 
           | c == ' ' || c == '\n' = ((reverse acc), s)
           | otherwise             = dale (getCharStr s) $ c:acc
 
+sexy :: [String] -> [Effects]
+sexy s = dale s []
+  where dale s acc
+          | null s    = reverse acc
+          | otherwise = dale (tail s) $ (read (head s) :: Effects):acc
+
+pla :: [Effects] -> Int
+pla es = dale es 0
+  where dale efs acc
+          | null efs  = acc
+          | otherwise = manage (head efs) (tail efs) acc
+          where manage (Say s) es acc         = if length s > acc then dale es $ length s
+                                                else dale es acc 
+                manage (Forever oths) es acc  = dale oths acc
+                manage (Repeat _ oths) es acc = dale (oths ++ es) acc
+                manage _ es acc               = dale es acc
+
+readFont :: Handle -> IO (Map.Map Char Pixels)
+readFont h = do
+  size <- hGetNextLineTrim h
+  fCatch Map.empty h size
+
+font :: Map.Map Char Pixels -> Char -> Pixels
+font bm c = bm Map.! c
+
 readDisplayInfo :: Handle -> IO [Effects]
 readDisplayInfo handle = dale handle []
   where dale h acc = do
@@ -189,24 +207,50 @@ readDisplayInfo handle = dale handle []
                                    i <- hGetArray h
                                    dale h $ (g ++ " " ++ e ++ " " ++ i):acc
 
-sexy :: [String] -> [Effects]
-sexy s = dale s []
-  where dale s acc
-          | null s    = reverse acc
-          | otherwise = dale (tail s) $ (read (head s) :: Effects):acc
-
-pla :: [Effects] -> Int
-pla es = dale es 0
-  where dale efs acc
-          | null efs  = acc
-          | otherwise = manage (head efs) (tail efs) acc
-          where manage (Say s) es acc         = if length s > acc then dale es $ length s
-                                                else dale es acc 
-                manage (Forever oths) es acc  = dale oths acc
-                manage (Repeat _ oths) es acc = dale (oths ++ es) acc
-                manage _ es acc               = dale es acc
+----------------------------------------
+-- Main Led-Display
+----------------------------------------
 
 ppc = 5
+
+main :: IO ()
+main = do
+  argv <- getArgs
+  if length argv > 1 then begin argv
+    else putStrLn "La cantidad de argumentos pasados por comando no es suficiente "
+    where begin argv = do
+            f    <- openFile (head argv) ReadMode          -- Archivo de Fonts
+            e    <- readFont f                             -- Map Char Pixels
+            t    <- openFile ((head . tail) argv) ReadMode -- Archivo de Effects
+            g    <- readDisplayInfo t                      -- Estructura de [Effects]
+            hClose t
+            hClose f
+            f    <- openFile (head argv) ReadMode          -- Archivo de Fonts(AGAIN)
+            hw   <- hGetNextLineTrim f                     -- Arreglo de dimesiones para los pixels
+            hClose f
+            let max_word = pla g -- Tamaño maximo de palabra
+                p_col = read (head hw) :: Int
+                p_fil = read (last hw) :: Int
+                p = concatPixels $ take max_word $ repeat $ font e ' '
+            HGL.runGraphics $ do
+              w <- HGL.openWindowEx
+                   "Led Display"
+                   Nothing
+                   (ppc * p_col * max_word, ppc * p_fil)
+                   HGL.DoubleBuffered
+                   (Just 50)
+              HGL.clearWindow w
+              ldisplay w p g e max_word
+              HGL.closeWindow w
+
+ldisplay w p fx e m = do
+  HGL.setGraphic w $ HGL.overGraphics $ showP $ evalE (Color HGL.White) p e m
+  HGL.getWindowTick w
+  if null fx then HGL.getWindowTick w
+    else go w p fx e m
+    where go w p fx e m = do
+            let ef = headE fx
+            ldisplay w (evalE (fst ef) p e m) (snd ef) e m
 
 lezip :: (Eq a, Num a, Num b) => Pixels -> [(a,b)]
 lezip xs = concatMap removeNull $tablero 0 $ map (map on) $dots xs
@@ -219,57 +263,28 @@ lezip xs = concatMap removeNull $tablero 0 $ map (map on) $dots xs
 
 cells :: HGL.Color -> [(Int,Int)] -> [HGL.Graphic]
 cells d t = map cell t 
-  where cell (c,f) = 
-          -- HGL.overGraphic
-          -- (HGL.withColor d ( HGL.regionToGraphic ( HGL.rectangleRegion (f*ppc,c*ppc) ((f+1)*ppc,(c+1)*ppc))))
-          -- (HGL.withColor HGL.Black ( HGL.regionToGraphic ( HGL.rectangleRegion ((f*ppc)-1,(c*ppc)-1) (((f+1)*ppc)+1,((c+1)*ppc)+1))))
-          -- (HGL.withColor d ( HGL.regionToGraphic ( HGL.rectangleRegion ((f*ppc)+1,(c*ppc)+1) ((((f+1)*ppc)-1),(((c+1)*ppc)-1)))))
-          -- (HGL.withColor HGL.Black ( HGL.regionToGraphic ( HGL.rectangleRegion (f*ppc,c*ppc) ((f+1)*ppc,(c+1)*ppc))))
-          
+  where cell (c,f) =
           -- Solucion Revolucionaria Socialista 
           HGL.overGraphic
           (HGL.withColor d ( HGL.regionToGraphic ( HGL.rectangleRegion ((f*ppc)+1,(c*ppc)+1) ((((f+1)*ppc)-1),(((c+1)*ppc)-1)))))
           (HGL.withColor HGL.Black ( HGL.regionToGraphic ( HGL.rectangleRegion (f*ppc,c*ppc) ((f+1)*ppc,(c+1)*ppc))))
-          -- HGL.ellipse (f*ppc,c*ppc) ((f+1)*ppc,(c+1)*ppc)
-        
+
+-- | 'evalE' Aplica el efecto al Pixels
+evalE :: E.Effects -> Pixels -> Map.Map Char Pixels -> Int -> Pixels
+evalE (E.Say s) p mc max = concatPixels $ map (font mc) $ s ++ (take (max - (length s)) (repeat ' '))
+evalE E.Up p         _ _ = up p
+evalE E.Down p       _ _ = down p
+evalE E.Left p       _ _ = left p
+evalE E.Right p      _ _ = right p
+evalE E.Backwards p  _ _ = backwards p
+evalE E.UpsideDown p _ _ = upsideDown p
+evalE E.Negative p   _ _ = negative p
+evalE (E.Color c) p  _ _ = p { color = c }
+evalE (E.Delay i) p  _ _ = p
+
+-- | 'sleepDelay' retarda la ejecucion tanto milisegundos se le indique
+sleepDelay :: Int -> IO ()
+sleepDelay ms = do
+  threadDelay $ 1000 * ms
+  
 showP p = cells (color p) $ lezip $ p
-
-main :: IO ()
-main = do
-  argv <- getArgs
-  f    <- openFile (head argv) ReadMode          -- Archivo de Fonts
-  e    <- readFont f                             -- Map Char Pixels
-  t    <- openFile ((head . tail) argv) ReadMode -- Archivo de Effects
-  g    <- readDisplayInfo t                      -- Estructura de [Effects]
-  f    <- openFile (head argv) ReadMode          -- Archivo de Fonts(AGAIN)
-  hw   <- hGetNextLineTrim f                     -- Arreglo de dimesiones para los pixels
-  let max_word = length "Never Gonna Give You Up!!!" -- pla g                           -- Tamaño maximo de palabra
-      p_col = read (head hw) :: Int
-      p_fil = read (last hw) :: Int
-      a = font e 'A'
-      p = concatPixels $ map (font e) "Never Gonna Give You Up!!!"
-  hClose f
-  hClose t
-  HGL.runGraphics $ do
-    w <- HGL.openWindowEx
-         "Led Display"
-         Nothing
-         (ppc * p_col * max_word, ppc * p_fil)
-         HGL.DoubleBuffered
-         (Just 50)
-    HGL.clearWindow w
-    -- HGL.setGraphic w $ HGL.overGraphics $ cells HGL.Green $ lezip a
-    -- HGL.setGraphic w $ HGL.overGraphics $ showP $ evalE (Color HGL.White) p
-    ldisplay w p g
-    -- HGL.getKey w
-    HGL.closeWindow w
-
-ldisplay w p fx = do
-  HGL.setGraphic w $ HGL.overGraphics $ showP $ evalE (Color HGL.White) p
-  HGL.getWindowTick w
-  if null fx then HGL.getWindowTick w
-    else go w p fx
-    where go win pal fxs = do
-            let ef = headE fxs
-            -- sleepToNextMinute
-            ldisplay win (evalE (fst ef) pal) $ snd ef
