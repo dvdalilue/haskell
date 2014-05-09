@@ -16,9 +16,15 @@ module Effects (
      Repeat,
      Forever
      ),
+
+  evalE,
+
+  sleepDelay
+  
   ) where
 
 import qualified Graphics.HGL as HGL (Color)
+import qualified Data.Map as Map
 import Control.Concurrent (threadDelay)
 import Pixels as Pix
 
@@ -36,3 +42,21 @@ data Effects = Say String
              | Repeat Integer [Effects]
              | Forever [Effects]
              deriving (Show,Read)
+
+-- | 'evalE' Aplica el efecto al Pixels
+evalE :: Effects -> Pixels -> Map.Map Char Pixels -> Int -> Pixels
+evalE (Say s) p mc max = concatPixels $ map ((Map.!) mc) $ s ++ (take (max - (length s)) (repeat ' '))
+evalE Up p         _ _ = up p
+evalE Down p       _ _ = down p
+evalE Effects.Left p       _ _ = left p
+evalE Effects.Right p      _ _ = right p
+evalE Backwards p  _ _ = backwards p
+evalE UpsideDown p _ _ = upsideDown p
+evalE Negative p   _ _ = negative p
+evalE (Color c) p  _ _ = p { color = c }
+evalE (Delay i) p  _ _ = p
+
+-- | 'sleepDelay' retarda la ejecucion tanto milisegundos se le indique
+sleepDelay :: Int -> IO ()
+sleepDelay ms = do
+  threadDelay $ 1000 * ms

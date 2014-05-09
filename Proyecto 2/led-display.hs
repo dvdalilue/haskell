@@ -4,7 +4,6 @@ import Data.List
 import System.IO
 import System.Exit
 import System.Environment
-import Control.Concurrent (threadDelay)
 import qualified Data.Map as Map
 import qualified Graphics.HGL as HGL
 
@@ -268,23 +267,5 @@ cells d t = map cell t
           HGL.overGraphic
           (HGL.withColor d ( HGL.regionToGraphic ( HGL.rectangleRegion ((f*ppc)+1,(c*ppc)+1) ((((f+1)*ppc)-1),(((c+1)*ppc)-1)))))
           (HGL.withColor HGL.Black ( HGL.regionToGraphic ( HGL.rectangleRegion (f*ppc,c*ppc) ((f+1)*ppc,(c+1)*ppc))))
-
--- | 'evalE' Aplica el efecto al Pixels
-evalE :: E.Effects -> Pixels -> Map.Map Char Pixels -> Int -> Pixels
-evalE (E.Say s) p mc max = concatPixels $ map (font mc) $ s ++ (take (max - (length s)) (repeat ' '))
-evalE E.Up p         _ _ = up p
-evalE E.Down p       _ _ = down p
-evalE E.Left p       _ _ = left p
-evalE E.Right p      _ _ = right p
-evalE E.Backwards p  _ _ = backwards p
-evalE E.UpsideDown p _ _ = upsideDown p
-evalE E.Negative p   _ _ = negative p
-evalE (E.Color c) p  _ _ = p { color = c }
-evalE (E.Delay i) p  _ _ = p
-
--- | 'sleepDelay' retarda la ejecucion tanto milisegundos se le indique
-sleepDelay :: Int -> IO ()
-sleepDelay ms = do
-  threadDelay $ 1000 * ms
   
 showP p = cells (color p) $ lezip $ p
