@@ -1,0 +1,2 @@
+Say "Let it go!"
+Forever [Right, Color Blue, Right, Color White]

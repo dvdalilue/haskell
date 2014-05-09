@@ -6,6 +6,7 @@ import System.Exit
 import System.Environment
 import qualified Data.Map as Map
 import qualified Graphics.HGL as HGL
+import Control.Concurrent
 
 hGetNextLine :: Handle -> IO String
 hGetNextLine handle = do
@@ -235,28 +236,13 @@ main = do
             do
               f    <- openFile (head argv) ReadMode          -- Archivo de Fonts
               e    <- readFont f                             -- Map Char Pixels
-              t    <- openFile ((head . tail) argv) ReadMode -- Archivo de Effects
-              g    <- readDisplayInfo t                      -- Estructura de [Effects]
-              hClose t
+              
               hClose f
               f    <- openFile (head argv) ReadMode          -- Archivo de Fonts(AGAIN)
               hw   <- hGetNextLineTrim f                     -- Arreglo de dimesiones para los pixels
               hClose f
-              let max_word = pla g -- Tamaño maximo de palabra
-                  p_col = read (head hw) :: Int
-                  p_fil = read (last hw) :: Int
-                  p = concatPixels $ take max_word $ repeat $ font e ' '
-                  es = evalL g
-              HGL.runGraphics $ do
-                w <- HGL.openWindowEx
-                     "Led Display"
-                     Nothing
-                     (ppc * p_col * max_word, ppc * p_fil)
-                     HGL.DoubleBuffered
-                     (Just 5)
-                HGL.clearWindow w
-                leD w p es e max_word
-                HGL.closeWindow w
+
+              effect e (tail argv) hw
   
 showP :: Pixels -> [HGL.Graphic]
 showP p = cells (color p) $ lezip $ p
@@ -277,9 +263,43 @@ showP p = cells (color p) $ lezip $ p
               (HGL.withColor d ( HGL.regionToGraphic ( HGL.rectangleRegion ((f*ppc)+1,(c*ppc)+1) ((((f+1)*ppc)-1),(((c+1)*ppc)-1)))))
               (HGL.withColor HGL.Black ( HGL.regionToGraphic ( HGL.rectangleRegion (f*ppc,c*ppc) ((f+1)*ppc,(c+1)*ppc))))
 
-leD w _ [] _ _ = HGL.getWindowTick w
+leD w _ [] _ _ = 
+  do
+    HGL.getKey w
+    HGL.closeWindow w
+
 leD w p (f:fx) e m = 
   do
     HGL.setGraphic w $ HGL.overGraphics $ showP p 
     HGL.getWindowTick w
     leD w (evalE f p e m) fx e m
+    
+effect e ls hw = 
+  do
+    t    <- openFile (head ls) ReadMode -- Archivo de Effects
+    g    <- readDisplayInfo t                      -- Estructura de [Effects]
+    hClose t
+    let max_word = pla g -- Tamaño maximo de palabra
+        p_col = read (head hw) :: Int
+        p_fil = read (last hw) :: Int
+        p = concatPixels $ take max_word $ repeat $ font e ' '
+        es = evalL g
+    HGL.runGraphics $ do
+      w <- HGL.openWindowEx
+           "Led Display"
+           Nothing
+           (ppc * p_col * max_word, ppc * p_fil)
+           HGL.DoubleBuffered
+           (Just 5)
+      HGL.clearWindow w
+      id <- forkIO $leD w p es e max_word
+      checkEsc id w
+
+checkEsc id w =       
+  do
+    e <- HGL.getKey w
+    if not (HGL.isEscapeKey e) then checkEsc id w
+      else
+      do
+        killThread id
+        HGL.closeWindow w
