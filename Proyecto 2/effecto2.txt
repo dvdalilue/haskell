@@ -1,2 +1,6 @@
-Say "Let it go!"
-Forever [Right, Color Blue, Right, Color White]
+Say "give"
+Repeat 7 [Up,Delay 50]
+Say "you" 
+Repeat 7 [Up,Delay 50]
+
+

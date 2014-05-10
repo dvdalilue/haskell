@@ -8,7 +8,7 @@ import qualified Data.Map as Map
 import qualified Graphics.HGL as HGL
 import Control.Concurrent
 
-hGetNextLine :: Handle -> IO String
+--hGetNextLine :: Handle -> IO String
 hGetNextLine handle = do
   b <- hIsEOF handle
   if b then return "EOF" else go handle
@@ -17,10 +17,10 @@ hGetNextLine handle = do
             if (null . words) l then hGetNextLine handle
               else return l
 
-hGetNextLineTrim :: Handle -> IO [String]
-hGetNextLineTrim handle = do
-  l <- hGetNextLine handle
-  return $ words l
+-- hGetNextLineTrim :: Handle -> IO [String]
+-- hGetNextLineTrim handle = do
+--   l <- hGetNextLine handle
+--   return $ words l
 
 hGetKey :: Handle -> IO Char
 hGetKey handle = do
@@ -164,27 +164,27 @@ pla es = dale es 0
                 manage (Repeat _ oths) es acc = dale (oths ++ es) acc
                 manage _ es acc               = dale es acc
 
-listEffects :: [String] -> IO [Effects]
-listEffects ss = dale ss []
-  where dale ss acc = do
-          if null ss then return $ reverse $ concat acc
-            else go ss acc
-            where go (s:ss) acc = do
-                    f  <- openFile s ReadMode
-                    ef <- readDisplayInfo f
-                    dale ss $ ef:acc
+listEffects :: [FilePath] -> IO [Effects]
+listEffects ss = 
+   do
+     xs <- mapM (\c->openFile c ReadMode) ss
+     ys <- mapM readDisplayInfo xs
+     mapM hClose xs
+     return $ concat ys
 
 readFont :: Handle -> IO (Map.Map Char Pixels)
 readFont h = do
   size <- hGetNextLineTrim h
   let a = read (head size) :: Int
       l = read (last size) :: Int
-      b = Pixels HGL.White $ take a $ repeat $ take l $ repeat $ Pixel True
+      b = Pixels HGL.White $ take l $ repeat $ take a $ repeat $ Pixel True
   fCatch (Map.singleton '\0' b) h size
+    where
+      hGetNextLineTrim handle = 
+        do
+          l <- hGetNextLine handle
+          return $ words l
 
-font :: Map.Map Char Pixels -> Char -> Pixels
-font bm c = if Map.member c bm then bm Map.! c
-            else bm Map.! '\0'
 
 readDisplayInfo :: Handle -> IO [Effects]
 readDisplayInfo handle = dale handle []
@@ -239,67 +239,72 @@ main = do
               
               hClose f
               f    <- openFile (head argv) ReadMode          -- Archivo de Fonts(AGAIN)
-              hw   <- hGetNextLineTrim f                     -- Arreglo de dimesiones para los pixels
               hClose f
+              
+              g <- listEffects (tail argv)
+              
+              ledDisplay e g
 
-              effect e (tail argv) hw
-  
-showP :: Pixels -> [HGL.Graphic]
-showP p = cells (color p) $ lezip $ p
-  where
-    lezip xs = concatMap removeNull $tablero 0 $ map (map on) $dots xs
-      where removeNull = filter (not . (\c->c == -1) . fst)
-            tablero _ [] = []
-            tablero i (x:xs) = (puntos i 0 x) : (tablero (i+1) xs )
-              where puntos _ _ []     = []
-                    puntos x y (p:ps) = let a = if p then (x,y)
-                                                else (-1,-1) in a :
-                                                                puntos x (y+1) ps
-
-    cells d t = map cell t 
-      where cell (c,f) =
-              -- Solucion Revolucionaria Socialista 
-              HGL.overGraphic
-              (HGL.withColor d ( HGL.regionToGraphic ( HGL.rectangleRegion ((f*ppc)+1,(c*ppc)+1) ((((f+1)*ppc)-1),(((c+1)*ppc)-1)))))
-              (HGL.withColor HGL.Black ( HGL.regionToGraphic ( HGL.rectangleRegion (f*ppc,c*ppc) ((f+1)*ppc,(c+1)*ppc))))
-
-leD w _ [] _ _ = 
+ledDisplay e g =
   do
-    HGL.getKey w
-    HGL.closeWindow w
-
-leD w p (f:fx) e m = 
-  do
-    HGL.setGraphic w $ HGL.overGraphics $ showP p 
-    HGL.getWindowTick w
-    leD w (evalE f p e m) fx e m
-    
-effect e ls hw = 
-  do
-    t    <- openFile (head ls) ReadMode -- Archivo de Effects
-    g    <- readDisplayInfo t                      -- Estructura de [Effects]
-    hClose t
     let max_word = pla g -- Tamaño maximo de palabra
-        p_col = read (head hw) :: Int
-        p_fil = read (last hw) :: Int
-        p = concatPixels $ take max_word $ repeat $ font e ' '
+        p_col = length $head $dots $e Map.! '\0'
+        p_fil = length $dots $e Map.! '\0'
+        p = concatPixels $ take max_word $ repeat $ allOff $ e Map.! '\0'
         es = evalL g
+
     HGL.runGraphics $ do
       w <- HGL.openWindowEx
            "Led Display"
            Nothing
            (ppc * p_col * max_word, ppc * p_fil)
            HGL.DoubleBuffered
-           (Just 5)
+           (Just 50)
       HGL.clearWindow w
       id <- forkIO $leD w p es e max_word
       checkEsc id w
+  where checkEsc id w =       
+          do
+            e <- HGL.getKey w
+            if not (HGL.isEscapeKey e) then checkEsc id w
+              else
+              do
+                killThread id
+                HGL.closeWindow w
+                
+        leD w p [] _ _ = 
+          do
+            HGL.setGraphic w $ HGL.overGraphics $ showP p
+            HGL.getKey w
+            HGL.closeWindow w
+    
+        leD w p ((Delay i):fx) e m =
+          do
+            HGL.setGraphic w $ HGL.overGraphics $ showP p
+            HGL.getWindowTick w
+            sleepDelay (fromInteger i ::Int)
+            leD w p fx e m
+              where sleepDelay ms = do
+                      threadDelay $ 1000 * ms
+            
+        leD w p (f:fx) e m = 
+          do
+            HGL.setGraphic w $ HGL.overGraphics $ showP p
+            HGL.getWindowTick w
+            leD w (evalE f p e m) fx e m
 
-checkEsc id w =       
-  do
-    e <- HGL.getKey w
-    if not (HGL.isEscapeKey e) then checkEsc id w
-      else
-      do
-        killThread id
-        HGL.closeWindow w
+
+        showP p = cells (color p) $ lezip $ p
+          where lezip xs = concatMap removeNull $tablero 0 $ map (map on) $dots xs
+                  where removeNull = filter (not . (\c->c == -1) . fst)
+                        tablero _ [] = []
+                        tablero i (x:xs) = (puntos i 0 x) : (tablero (i+1) xs )
+                          where puntos _ _ []     = []
+                                puntos x y (p:ps) = let a = if p then (x,y)
+                                                            else (-1,-1) in a :
+                                                                            puntos x (y+1) ps
+
+        cells d t = map cell t 
+          where cell (c,f) = HGL.overGraphic
+                             (HGL.withColor d ( HGL.regionToGraphic ( HGL.rectangleRegion ((f*ppc)+1,(c*ppc)+1) ((((f+1)*ppc)-1),(((c+1)*ppc)-1)))))
+                             (HGL.withColor HGL.Black ( HGL.regionToGraphic ( HGL.rectangleRegion (f*ppc,c*ppc) ((f+1)*ppc,(c+1)*ppc))))
