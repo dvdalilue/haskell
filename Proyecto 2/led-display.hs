@@ -245,6 +245,8 @@ main = do
               
               ledDisplay e g
 
+-- | 'ledDisplay' funcion encargada de la impresion de los Pixels segun los font
+-- especificados
 ledDisplay e g =
   do
     let max_word = pla g -- Tamaño maximo de palabra
