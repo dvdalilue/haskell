@@ -17,10 +17,7 @@ module Effects (
      Forever
      ),
 
-  evalE, evalL,
-
-  sleepDelay
-  
+  evalE, evalL
   ) where
 
 import qualified Graphics.HGL as HGL (Color)
@@ -45,7 +42,7 @@ data Effects = Say String
 
 -- | 'evalE' Aplica el efecto al Pixels
 evalE :: Effects -> Pixels -> Map.Map Char Pixels -> Int -> Pixels
-evalE (Say s) p mc max = concatPixels $ map ((Map.!) mc) $ s 
+evalE (Say s) p mc max = concatPixels $ map (font mc) $ s 
                          ++ (take (max - (length s)) (repeat ' '))
 evalE Up p         _ _ = up p
 evalE Down p       _ _ = down p
@@ -55,13 +52,9 @@ evalE Backwards p  _ _ = backwards p
 evalE UpsideDown p _ _ = upsideDown p
 evalE Negative p   _ _ = negative p
 evalE (Color c) p  _ _ = p { color = c }
-evalE (Delay i) p  _ _ = p
-
--- | 'sleepDelay' retarda la ejecucion tanto milisegundos se le indique
-sleepDelay :: Int -> IO ()
-sleepDelay ms = do
-  threadDelay $ 1000 * ms
-  
+--evalE (Delay i) p  _ _ = p
+    
+    
 -- | 'evalL' funcion que arma la lista con los efectos a mostrar
 evalL [] = []
 evalL ((Forever xs):es) = cycle $evalL xs

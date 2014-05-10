@@ -20,11 +20,13 @@ module Pixels (
   up, down, left, right, upsideDown, backwards, negative,
   
   -- * Operaciones para combinar pixels
-  concatPixels
+  concatPixels, font, allOff
+  
   
   ) where
 
 import qualified Graphics.HGL as HGL (Color)
+import qualified Data.Map as Map
 
 -- | Tipo de datos para Pixels
 data Pixels = Pixels { color :: HGL.Color, dots :: [[Pixel]] }
@@ -68,3 +70,15 @@ negative (Pixels{color=c,dots=d}) = Pixels c (neg d)
 concatPixels :: [Pixels] -> Pixels
 concatPixels (p:ps) = Pixels (color p) $foldl mergePixels (dots p) (map dots ps)
   where mergePixels a b = map (\ps -> (fst ps)++(snd ps)) $ zip a b
+
+allOn :: Pixels -> Pixels
+allOn (Pixels{color=c,dots=d}) = Pixels c (turnOn d)
+  where turnOn p = map (map (\c->Pixel True)) p
+        
+allOff :: Pixels -> Pixels
+allOff (Pixels{color=c,dots=d}) = Pixels c (turnOff d)
+  where turnOff p = map (map (\c->Pixel False)) p
+
+font :: Map.Map Char Pixels -> Char -> Pixels
+font bm c = if Map.member c bm then bm Map.! c
+            else bm Map.! '\0'
