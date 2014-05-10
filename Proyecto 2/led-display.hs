@@ -183,8 +183,7 @@ readFont h = do
   fCatch (Map.singleton '\0' b) h size
 
 font :: Map.Map Char Pixels -> Char -> Pixels
-font bm c = if Map.member c bm then bm Map.! c
-            else bm Map.! '\0'
+font bm c = if Map.member c bm then (bm Map.! c) else (bm Map.! '\0')
 
 readDisplayInfo :: Handle -> IO [Effects]
 readDisplayInfo handle = dale handle []
