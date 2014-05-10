@@ -71,14 +71,12 @@ concatPixels :: [Pixels] -> Pixels
 concatPixels (p:ps) = Pixels (color p) $foldl mergePixels (dots p) (map dots ps)
   where mergePixels a b = map (\ps -> (fst ps)++(snd ps)) $ zip a b
 
-allOn :: Pixels -> Pixels
-allOn (Pixels{color=c,dots=d}) = Pixels c (turnOn d)
-  where turnOn p = map (map (\c->Pixel True)) p
-        
+-- | 'allOff' apaga todo los Pixel dentro de un Pixels        
 allOff :: Pixels -> Pixels
 allOff (Pixels{color=c,dots=d}) = Pixels c (turnOff d)
   where turnOff p = map (map (\c->Pixel False)) p
 
+-- | 'font' permite obtener la representacion en Pixels de un Char
 font :: Map.Map Char Pixels -> Char -> Pixels
 font bm c = if Map.member c bm then bm Map.! c
             else bm Map.! '\0'

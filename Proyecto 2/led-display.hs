@@ -8,6 +8,8 @@ import qualified Data.Map as Map
 import qualified Graphics.HGL as HGL
 import Control.Concurrent
 
+-- | 'hGetNextLine' Consigue la cual tenga al menos un caracter que
+-- no sea espacio y/o salto de linea
 hGetNextLine :: Handle -> IO String
 hGetNextLine handle = do
   b <- hIsEOF handle
@@ -17,6 +19,8 @@ hGetNextLine handle = do
             if (null . words) l then hGetNextLine handle
               else return l
 
+-- | 'hGetNextChar' Consigue el siguiente caracter que no sea espacio
+-- salto de linea o tabulador. Si es EOF retorna '\NUL'
 hGetNextChar :: Handle -> IO Char
 hGetNextChar handle = do
   b <- hIsEOF handle
@@ -28,6 +32,8 @@ hGetNextChar handle = do
                || c == '\t' then hGetNextChar handle
               else return c
 
+-- | 'hGetNext' Consigue el siguiente String separado por espacio
+-- salto de linea o tabulador
 hGetNext :: Handle -> IO String
 hGetNext handle = do
   a <- hGetNextChar handle
@@ -39,6 +45,7 @@ hGetNext handle = do
                || c == '\t' then return (reverse acc)
               else dale h (c:acc)
 
+-- | 'hShowError' Muestra el error del Handle pasado junto al String
 hShowError :: Handle -> String -> IO b
 hShowError h s = do
   fileName <- hGetName h
@@ -48,6 +55,7 @@ hShowError h s = do
         s <- hShow handle
         return $ tail $ dropWhile (/= '=') $ takeWhile (/= ',') s
 
+-- | 'hGetArray' Consigue el String de un Array
 hGetArray :: Handle -> IO String
 hGetArray handle = do
   c <- hGetNextChar handle
@@ -207,6 +215,8 @@ main = do
               mapM hClose xs
               return $ concat ys
 
+-- | 'ledDisplay' funcion encargada de la impresion de los Pixels segun los font
+-- especificados
 ledDisplay e g =
   do
     let max_word = pla g -- Tamaño maximo de palabra
@@ -237,6 +247,8 @@ ledDisplay e g =
                     manage (Repeat _ oths) es acc = dale (oths ++ es) acc
                     manage _ es acc               = dale es acc
 
+    -- Funcion que se encarga de revisar si han presionado ESC, de ser asi 
+    -- se termina la corrida
     checkEsc id w =       
       do
         e <- HGL.getKey w
@@ -245,7 +257,8 @@ ledDisplay e g =
           do
             killThread id
             HGL.closeWindow w
-                
+
+    -- Funcion que recorre la lista de Effects y lo va ejecutando
     leD w p [] _ _ = 
       do
         HGL.setGraphic w $ HGL.overGraphics $ showP p

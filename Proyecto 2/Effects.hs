@@ -21,7 +21,7 @@ module Effects (
   ) where
 
 import qualified Graphics.HGL as HGL (Color)
-import qualified Data.Map as Map
+import qualified Data.Map as Map (Map)
 import Control.Concurrent (threadDelay)
 import Pixels as Pix
 
@@ -52,7 +52,6 @@ evalE Backwards p  _ _ = backwards p
 evalE UpsideDown p _ _ = upsideDown p
 evalE Negative p   _ _ = negative p
 evalE (Color c) p  _ _ = p { color = c }
---evalE (Delay i) p  _ _ = p
     
     
 -- | 'evalL' funcion que arma la lista con los efectos a mostrar
