@@ -1,4 +1,0 @@
-Say "up"
-Repeat 7 [Up, Delay 50]
-Say "!" 
-Repeat 7 [Up, Delay 50]
