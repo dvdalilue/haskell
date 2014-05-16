@@ -9,8 +9,9 @@ main :-
 		genposible(1,1,9,M),
 		fun(Mat,M),
 		
+		
 		sudoku(M,9),
-		%norepcolumna(8/3/6,Mat),
+		%norepfila(8/3/6,M),
 		drawSudoku(M,9,1),
 		nl.
 
@@ -63,8 +64,9 @@ genNumbers(T,[A|R]) :- A is T, N is T - 1, genNumbers(N,R),
 											 asserta(genNumbers(N,R)), !.
 
 norepfila(_,[]) :- !.
-norepfila(X/Y/Z,[X1/_/_|R]) :- X =\= X1, !, norepfila(X/Y/Z,R).
-norepfila(X/Y/Z,[_/_/Z1|R]) :- Z =\= Z1, !, norepfila(X/Y/Z,R).
+norepfila(X/_/Z,[X1/_/Z1|_]) :- X == X1, Z == Z1, !, fail.
+norepfila(_/Y/Z,[_/Y1/Z1|_]) :- Y == Y1, Z == Z1, !, fail.
+norepfila(X/Y/Z,[_|R]) :- norepfila(X/Y/Z,R). 
 %Creo que un solo predicado seria mejor.
 norepcolumna(_,[]) :- !.
 norepcolumna(X/Y/Z,[_/Y1/_|R]) :- Y =\= Y1, !, norepcolumna(X/Y/Z,R). %Poner X =:= X1 da error(excepcion), X == X1 o X is X1
