@@ -4,4 +4,6 @@ haskell
 Repository Of My Start In Haskell (Curiosity)
 
 -------
-Metaprogramacion en Prolog
+Proyecto de Lenguajes I (CI3661) en prolog
+-------
+Code as Data...
