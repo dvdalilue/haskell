@@ -4,5 +4,6 @@ haskell
 Repository Of My Start In Haskell (Curiosity)
 
 -------
-
-Viendo codigo de una manera diferente
+Proyecto de Lenguajes I (CI3661) en prolog
+-------
+Code as Data...
