@@ -1,3 +1,17 @@
+ui :-
+		write('\nPosee los siguiete comandos:\n\n þ Vuelos       - v\n þ Fechas       - f\n þ Directo      - d\n þ Ida y Vuelta - iv\n þ quit         - q\n\nAgente~® '),
+		read_atom(S),
+		manager(S),
+		!,
+		ui.
+ui :- !.
+
+manager(S) :-	S \= q, !.
+
+/*
+  Hechos!!
+*/
+
 horario( new_york, chicago,
            [  9:40 / 10:50 / nw4733 / todos,
              13:40 / 14:50 / nw4773 / habiles,
