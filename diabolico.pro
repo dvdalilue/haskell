@@ -9,11 +9,17 @@ diabolico(A) :-
 		filas(A,16),
 		diagonalP(A,16,0,34),
 		diagonalS(A,16,3,0,34),
+		diagonalm(A,16,2,0),
+		diagonalu(A,16,3,0),
+		diagonald(A,16,1,0),
 		columnas(A,16).
 diabolico(A) :- 
 		filasV(A,16,3,0),
 		diagonalP(A,16,0,34),
 		diagonalS(A,16,3,0,34),
+		diagonalm(A,16,2,0),
+		diagonalu(A,16,3,0),
+		diagonald(A,16,1,0),
 		columnas(A,16),
 		!.
 
@@ -83,7 +89,67 @@ diagonalS([H|T],NN,0,B,X) :-
 		N is H + B,
 		M is NN - 1,
 		!,
-		diagonalS(T,M,2,N,X).	
+		diagonalS(T,M,2,N,X).
+
+diagonalm([_|T],NN,I,B) :-
+		NN > 0,
+		I > 0,
+		N is I - 1,
+		M is NN - 1,
+		!,
+		diagonalm(T,M,N,B).
+diagonalm([H|[NH|T]],9,0,B) :-
+		N is H + NH + B,
+		!,
+		diagonalm(T,7,4,N).
+diagonalm([H|T],NN,0,B) :-
+		NN > 0,
+		N is H + B,
+		M is NN - 1,
+		!,
+		diagonalm(T,M,4,N).
+diagonalm([],_,_,B) :-
+		B is 34, !.
+
+diagonalu([_|T],NN,I,B) :-
+		NN > 0,
+		I > 0,
+		N is I - 1,
+		M is NN - 1,
+		!,
+		diagonalu(T,M,N,B).
+diagonalu([H|[NH|T]],13,0,B) :-
+		N is H + NH + B,
+		!,
+		diagonalu(T,11,4,N).
+diagonalu([H|T],NN,0,B) :-
+		NN > 0,
+		N is H + B,
+		M is NN - 1,
+		!,
+		diagonalu(T,M,4,N).
+diagonalu([],_,_,B) :-
+		B is 34, !.
+
+diagonald([_|T],NN,I,B) :-
+		NN > 0,
+		I > 0,
+		N is I - 1,
+		M is NN - 1,
+		!,
+		diagonald(T,M,N,B).
+diagonald([H|[NH|T]],5,0,B) :-
+		N is H + NH + B,
+		!,
+		diagonald(T,3,4,N).
+diagonald([H|T],NN,0,B) :-
+		NN > 0,
+		N is H + B,
+		M is NN - 1,
+		!,
+		diagonald(T,M,4,N).
+diagonald([],_,_,B) :-
+		B is 34, !.
 
 columnas(A,T) :- columna(A,T,0,0), columna(A,T,1,0), columna(A,T,2,0), columna(A,T,3,0), !.
 
@@ -116,16 +182,3 @@ genNumbers(T,V,[A|R]) :-
 		genNumbers(N,M,R),
 		A is M,
 		asserta((genNumbers(T,V,[A|R]) :- !)).
-
-/* 
-  Funcion Fold sobre lista
-    1. Lista
-    2. Functor de aridad 2
-    3. Elemento Nuetro del Functor
-    4. Variable Libre
-*/
-fold([H|T],FN,B,X) :-
-		F =.. [FN,H,B],
-		N is F,
-		fold(T,FN,N,X).
-fold([],_,B,X)     :- X is B.
