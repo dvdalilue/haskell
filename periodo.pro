@@ -22,13 +22,15 @@ manager(_,A,R) :-
 		%reduce(P,NP), % Elimina los repetidos, pero no importa.
 		check(P), % Se verifica si algun numero distinto a 2 o 5
 		R = [0], !.
-manager(D,_,R) :- 
-		nextD(D,A,T),
-		nextD(T,B,_),
-		A == B,
-		R = [A],
-		!.
-manager(D,_,R) :-	declist(D,R,[]), !.
+manager(D,_,R) :-	infiniteMix(D,R), !.
+
+%manager(D,_,R) :- 
+% 		nextD(D,A,T),
+% 		nextD(T,B,_),
+% 		A == B,
+% 		R = [A],
+% 		!.
+%manager(D,_,R) :-	declist(D,R,[]), !.
 		
 primos(N,X) :-
 		O is mod(N,2),
@@ -58,6 +60,22 @@ check([H|T]) :-
 		H == 2,
 		!,
 		check(T).
+
+infiniteMix(N,R) :-
+		mix(N,P,[],S),
+		dropWhile(P,\=,S,R),
+		!.
+
+mix(N,[H|T],L,S) :-
+		nextD(N,H,NN),
+		\+ member(H,L),
+		NL = [H|L],
+		!,
+		mix(NN,T,NL,S).
+mix(N,T,_,S) :- 
+		nextD(N,S,_),
+		T = [],
+		!.
 
 declist(_,T,L) :-
 		T = [],
@@ -110,3 +128,20 @@ reduce([A|TA],[F|TF]) :-
 		F = A,
 		!,
 		reduce(NT,TF).
+
+dropWhile([],_,_,SL) :- SL = [], !.
+dropWhile([L|T],FN,U,SL) :- 
+		F =.. [FN,L,U],
+		F,
+		!,
+		dropWhile(T,FN,U,SL).
+dropWhile([H|T],_,_,SL) :-
+		cp(T,C),
+		SL = [H|C],
+		!.
+
+cp([],T)    :- T = [], !.
+cp([H|T],[S|ST]) :-
+		S = H,
+		!,
+		cp(T,ST).
