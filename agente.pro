@@ -1,4 +1,4 @@
-%:- op(500,xfx,':').
+%:- op(500,xfy,[':']).
 %:- op(900,fx,':').
 
 ui :-
@@ -11,12 +11,45 @@ ui :- !.
 
 manager(S) :-	S \= q, !.
 
-%':'(_,_) :- !.
+todos(D) :- D == lun, !.
+todos(D) :- D == mar, !.
+todos(D) :- D == mie, !.
+todos(D) :- D == jue, !.
+todos(D) :- D == vie, !.
+todos(D) :- D == sab, !.
+todos(D) :- D == dom, !.
+
+habiles(D) :- D == lun, !.
+habiles(D) :- D == mar, !.
+habiles(D) :- D == mie, !.
+habiles(D) :- D == jue, !.
+habiles(D) :- D == vie, !.
+
+ruta(O,DE,DI,R) :-
+		horario(O,DE,V),
+		vuelos(V,DI,R), !.
+
+vuelos([],_,[]) :- !.
+vuelos([X:Y/Z:W/V/D|T],DI,[RH|RT]) :-
+		verificarD(DI,D),
+		RH = X:Y/Z:W/V, !,
+		vuelos(T,DI,RT).
+
+verificarD(D,F) :-
+		atom(F), !,
+		V =.. [F,D],
+		V.
+verificarD(D,L) :-
+		member(D,L), !.
+
+%:(_,_) :- !.
 		
 
 /*
   Hechos!!
 */
+
+test( new_york, chicago, [foo/bar/baz,e/t/u]).
 
 horario( new_york, chicago,
            [  9:40 / 10:50 / nw4733 / todos,
