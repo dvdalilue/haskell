@@ -1,0 +1,4 @@
+Say "give"
+Repeat 7 [Up,Delay 50]
+Say "you" 
+Repeat 7 [Up,Delay 50]
